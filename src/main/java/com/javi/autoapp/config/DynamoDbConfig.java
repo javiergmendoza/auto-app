@@ -22,6 +22,11 @@ public class DynamoDbConfig {
         return AmazonDynamoDBClientBuilder.defaultClient();
     }
 
+    @Bean(destroyMethod = "shutdown")
+    public DynamoDB dynamoDb(AmazonDynamoDB amazonDynamoDb) throws InterruptedException {
+        return new DynamoDB(amazonDynamoDb);
+    }
+
     @Bean
     public DynamoDBMapper dynamoDbMapper(AmazonDynamoDB amazonDynamoDb) {
         return new DynamoDBMapper(amazonDynamoDb);
