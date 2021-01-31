@@ -28,6 +28,12 @@ public class AppConfig {
     @Value("${coinbaseApiUri}")
     private String coinbaseApiUri;
 
+    @Value("${aws.region}")
+    private String awsRegion;
+
+    @Value("${aws.dynamodb.endpoint:null}")
+    private String dynamoDbEndpoint;
+
     @Bean
     public Session startWebSocket() throws IOException, DeploymentException {
         WebSocketContainer webSocketContainer = ContainerProvider.getWebSocketContainer();
