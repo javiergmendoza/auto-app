@@ -1,0 +1,81 @@
+type JobStatus {
+    id: ID!
+    status: Status!
+    gainsLosses: Float!
+    currentFundsUsd: Float!
+    startingFundsUsd: Float!
+}
+
+enum Status {
+    RUNNING,
+    FINISHED
+}
+
+enum Currency {
+    XLM,
+    BTC,
+    ETH,
+    LTC,
+    BCH,
+    EOS,
+    DASH,
+    OXT,
+    MKR,
+    ATOM,
+    XTZ,
+    ETC,
+    OMG,
+    ZEC,
+    LINK,
+    REP,
+    ZRX,
+    ALGO,
+    DAI,
+    KNC,
+    COMP,
+    BAND,
+    NMR,
+    CGLD,
+    UMA,
+    LRC,
+    YFI,
+    UNI,
+    REN,
+    BAL,
+    WBTC,
+    NU,
+    FIL,
+    AAVE,
+    GRT,
+    BNT,
+    SNX,
+}
+
+# Gets status of running job(s)
+type Query {
+    # Gets status of a running job
+    job(id: ID!):JobStatus
+
+    # Gets statuses of all running jobs
+    jobs:[JobStatus]
+}
+
+# Start a new job
+type Mutation {
+    # Creates new job
+    createJob(
+        # Currency tag
+        currency: Currency!,
+        # Max threshold for sell
+        max: Float!,
+        # Min threshold for buy
+        min: Float!,
+        # Starting amount dollars to invest
+        funds: Float!,
+        # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
+        expires: String!
+    ):JobStatus
+
+    # Stops a running job
+    stopJob(id: ID!):JobStatus
+}

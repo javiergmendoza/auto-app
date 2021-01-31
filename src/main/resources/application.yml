@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: autoapp
+  main:
+    log-startup-info: false
+server:
+  port: 8080
+
+coinbaseWebSocketUri: wss://ws-feed.pro.coinbase.com
+coinbaseApiUri: https://api-public.sandbox.pro.coinbase.com/orders
+coinbaseFee: 0.0149
