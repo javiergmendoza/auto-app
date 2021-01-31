@@ -2,3 +2,7 @@ aws:
   region: us-east-1
   dynamodb:
     endpoint: http://localhost:4566
+
+coinbaseWebSocketUri: wss://ws-feed.pro.coinbase.com
+coinbaseApiUri: https://api-public.sandbox.pro.coinbase.com
+coinbaseFee: 0.0149

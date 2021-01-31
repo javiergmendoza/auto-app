@@ -1,9 +1,15 @@
 type JobStatus {
-    id: ID!
+    jobId: ID!
     status: Status!
     gainsLosses: Float!
     currentFundsUsd: Float!
     startingFundsUsd: Float!
+    crossedMinThreshold: Boolean
+    minValue: Float
+    crossedMaxThreshold: Boolean
+    maxValue: Float
+    currency: Currency
+    size: Float
 }
 
 enum Status {

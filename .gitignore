@@ -6,7 +6,7 @@ build/
 coverage/
 !gradle/wrapper/gradle-wrapper.jar
 secrets/*
-!secrets/*sops*
+!secrets/*kms*
 bin/
 out/
 src/main/resources/git.properties

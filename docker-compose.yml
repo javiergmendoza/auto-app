@@ -32,5 +32,7 @@ services:
     expose:
       - 5005
       - 8081
+  service:
+    d
 volumes:
   localstack-datavolume:

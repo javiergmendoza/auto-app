@@ -52,13 +52,13 @@ public class JobStatus {
     private boolean crossedMinThreshold;
 
     @DynamoDBAttribute(attributeName = MIN_VALUE)
-    private boolean minValue;
+    private Double minValue;
 
     @DynamoDBAttribute(attributeName = CROSSED_MAX_THRESHOLD)
     private boolean crossedMaxThreshold;
 
     @DynamoDBAttribute(attributeName = MAX_VALUE)
-    private boolean maxValue;
+    private Double maxValue;
 
     @DynamoDBAttribute(attributeName = CURRENCY)
     private Currency currency;
