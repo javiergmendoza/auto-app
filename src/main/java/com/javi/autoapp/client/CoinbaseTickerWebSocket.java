@@ -17,6 +17,7 @@ public class CoinbaseTickerWebSocket {
     public void onOpen(Session session) throws JsonProcessingException {
         CoinbaseWebSocketSubscribe subscribe = new CoinbaseWebSocketSubscribe();
         subscribe.setType(CoinbaseWebSocketSubscribe.SUBSCRIBE);
+        subscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
         subscribe.setProductIds(Collections.singletonList(Currency.XLM.getLabel()));
 
         ObjectMapper mapper = new ObjectMapper();

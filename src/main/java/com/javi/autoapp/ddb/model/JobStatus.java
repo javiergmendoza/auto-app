@@ -17,6 +17,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.STATUS;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedEnum;
 import com.javi.autoapp.graphql.type.Currency;
@@ -30,39 +31,40 @@ import lombok.NoArgsConstructor;
 public class JobStatus {
 
     @DynamoDBHashKey(attributeName = HASH_KEY)
-    private final String id = JOB_STATUS_ID;
+    private String id = JOB_STATUS_ID;
 
-    @DynamoDBAttribute(attributeName = JOB_ID)
-    private String jobId;
+    @DynamoDBRangeKey(attributeName = JOB_ID)
+    private String jobId = "";
 
     @DynamoDBTypeConvertedEnum
     @DynamoDBAttribute(attributeName = STATUS)
-    private Status status;
+    private Status status = Status.RUNNING;
 
     @DynamoDBAttribute(attributeName = GAINS_LOSSES)
-    private double gainsLosses;
+    private double gainsLosses = 0.0;
 
     @DynamoDBAttribute(attributeName = CURRENT_FUNDS_USD)
-    private double currentFundsUsd;
+    private double currentFundsUsd = 0.0;
 
     @DynamoDBAttribute(attributeName = STARTING_FUNDS_USD)
-    private double startingFundsUsd;
+    private double startingFundsUsd = 0.0;
 
     @DynamoDBAttribute(attributeName = CROSSED_MIN_THRESHOLD)
-    private boolean crossedMinThreshold;
+    private boolean crossedMinThreshold = false;
 
     @DynamoDBAttribute(attributeName = MIN_VALUE)
-    private Double minValue;
+    private double minValue = 0.0;
 
     @DynamoDBAttribute(attributeName = CROSSED_MAX_THRESHOLD)
-    private boolean crossedMaxThreshold;
+    private boolean crossedMaxThreshold = false;
 
     @DynamoDBAttribute(attributeName = MAX_VALUE)
-    private Double maxValue;
+    private double maxValue = 0.0;
 
+    @DynamoDBTypeConvertedEnum
     @DynamoDBAttribute(attributeName = CURRENCY)
-    private Currency currency;
+    private Currency currency = Currency.USD;
 
     @DynamoDBAttribute(attributeName = SIZE)
-    private Double size;
+    private double size = 0.0;
 }

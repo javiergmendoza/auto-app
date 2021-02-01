@@ -5,6 +5,7 @@ import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobStatus;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Component

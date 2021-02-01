@@ -1,11 +1,12 @@
 package com.javi.autoapp.client.model;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonInclude(Include.NON_EMPTY)
 public class CoinbaseOrderRequest {
     public static final String BUY = "buy";
     public static final String SELL = "sell";

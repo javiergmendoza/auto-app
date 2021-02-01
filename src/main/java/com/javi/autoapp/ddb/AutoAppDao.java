@@ -22,7 +22,8 @@ public class AutoAppDao {
     @Cacheable
     public AutoAppSettings getAutoAppSettings() {
         AutoAppSettings settings = new AutoAppSettings();
-        return mapper.load(settings);
+        return settings;
+        //return mapper.load(settings);
     }
 
     @Cacheable

@@ -1,7 +1,5 @@
 package com.javi.autoapp.client;
 
-import com.javi.autoapp.client.model.CoinbaseOrderRequest;
-import com.javi.autoapp.client.model.CoinbaseOrderResponse;
 import com.javi.autoapp.config.AppConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHeaders;
@@ -11,7 +9,6 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 public class CoinbaseTraderClient {
     private static final String CB_ACCESS_PASSPHRASE = "CB-ACCESS-PASSPHRASE";

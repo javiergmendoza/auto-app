@@ -55,6 +55,7 @@ enum Currency {
     GRT,
     BNT,
     SNX,
+    USD,
 }
 
 # Gets status of running job(s)

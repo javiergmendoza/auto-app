@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -30,25 +31,40 @@ public class AutoTradingService implements MessageHandler.Whole<WebSocketFeed> {
     private final String key;
     private final String passphrase;
     private final String secret;
+    private boolean authenticated = false;
 
     public AutoTradingService(
             Session session,
             CoinbaseTraderClient coinbaseTraderClient,
             SignatureTool signatureTool,
-            AutoAppDao dao) {
+            AutoAppDao dao) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         this.coinbaseTraderClient = coinbaseTraderClient;
         this.signatureTool = signatureTool;
+
         autoAppDao = dao;
-        AutoAppSettings settings = autoAppDao.getAutoAppSettings();
+
+        //AutoAppSettings settings = autoAppDao.getAutoAppSettings();
+        AutoAppSettings settings = new AutoAppSettings();
+        settings.setKey("434b6341e2d77e0199c15de2bd44feb9");
+        settings.setSecret("SthTiOWse6R2qORb9Qo0SY5Ic1xnVN4jF0JTTf8QQWSMaJMIeLBbgNVZNMWcjnMqlmmw9IPl2u+0yiYm86P7Cw==");
+        settings.setPassphrase("test");
+
         key = settings.getKey();
         passphrase = settings.getPassphrase();
         secret = settings.getSecret();
+
+        authenticateWebSocket();
+
         userSession = session;
         userSession.addMessageHandler(this);
     }
 
+    @SneakyThrows
     @Override
     public void onMessage(WebSocketFeed message) {
+        if (!authenticated) {
+            authenticateWebSocket();
+        }
         if (message.getType().equals(WebSocketFeed.TICKER)) {
             handleTicker(message);
         } else if (message.getType().equals(WebSocketFeed.DONE)) {
@@ -130,8 +146,19 @@ public class AutoTradingService implements MessageHandler.Whole<WebSocketFeed> {
 
     private void authenticateWebSocket() throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
+        log.info("secret: {}", secret);
+        log.info("timestamp: {}", timestamp);
         String signature = signatureTool.getWebSocketSignature(secret, timestamp);
+
         CoinbaseWebSocketSubscribe authenticate = new CoinbaseWebSocketSubscribe();
+        authenticate.setType(CoinbaseWebSocketSubscribe.SUBSCRIBE);
         authenticate.setChannels(CoinbaseWebSocketSubscribe.FULL_CHANNEL);
+        authenticate.setSignature(signature);
+        authenticate.setKey(key);
+        authenticate.setPassphrase(passphrase);
+        authenticate.setTimestamp(timestamp);
+
+        log.info(mapper.writeValueAsString(authenticate));
+        userSession.getAsyncRemote().sendText(mapper.writeValueAsString(authenticate));
     }
 }

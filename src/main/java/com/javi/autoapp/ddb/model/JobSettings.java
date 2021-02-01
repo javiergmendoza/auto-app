@@ -12,6 +12,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,23 +23,23 @@ import lombok.NoArgsConstructor;
 public class JobSettings {
 
     @DynamoDBHashKey(attributeName = HASH_KEY)
-    private final String id = JOB_SETTINGS_ID;
+    private String id = JOB_SETTINGS_ID;
 
-    @DynamoDBAttribute(attributeName = JOB_ID)
-    private String jobId;
+    @DynamoDBRangeKey(attributeName = JOB_ID)
+    private String jobId = "";
 
     @DynamoDBAttribute(attributeName = CURRENCY)
-    private String currency;
+    private String currency = "";
 
     @DynamoDBAttribute(attributeName = MAX)
-    private Double max;
+    private double max = 0.0;
 
     @DynamoDBAttribute(attributeName = MIN)
-    private Double min;
+    private double min = 0.0;
 
     @DynamoDBAttribute(attributeName = FUNDS)
-    private Double funds;
+    private double funds = 0.0;
 
     @DynamoDBAttribute(attributeName = EXPIRES)
-    private String expires;
+    private String expires = "";
 }
