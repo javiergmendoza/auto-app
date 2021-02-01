@@ -3,4 +3,5 @@ aws:
   dynamodb:
     endpoint: http://localhost:4566
 
+coinbaseWebSocketUri: wss://ws-feed-public.sandbox.pro.coinbase.com
 coinbaseApiUri: https://api-public.sandbox.pro.coinbase.com

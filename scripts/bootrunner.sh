@@ -19,6 +19,9 @@ fi
 # Use custom script for proper signal handling
 source ${CONF}
 
+# Set environment variables
+exec ./scripts/secrets.sh
+
 # Services use sopstool to encrypt sensistive data.  By default sopstool
 # decrypts all encrypted files in .sops.yaml.
 # If the service roles does not have access to other env kms key then use

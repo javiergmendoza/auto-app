@@ -1,15 +1,18 @@
 package com.javi.autoapp.graphql;
 
 import static com.javi.autoapp.graphql.type.Status.FINISHED;
-import static com.javi.autoapp.graphql.type.Status.RUNNING;
 
 import com.coxautodev.graphql.tools.GraphQLMutationResolver;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.javi.autoapp.client.model.CoinbaseOrderRequest;
 import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobSettings;
 import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.ddb.model.JobStatus;
+import com.javi.autoapp.service.AutoTradingService;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -19,6 +22,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JobStatusMutation implements GraphQLMutationResolver {
     private final CacheManager cacheManager;
+    private final AutoTradingService tradingService;
     private final AutoAppDao autoAppDao;
 
     public JobStatus createJob(
@@ -26,24 +30,33 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             Double max,
             Double min,
             Double funds,
-            String expires) {
-        String jobId = UUID.randomUUID().toString();
+            String expires)
+            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
+        // Subscribe to currency feed
+        tradingService.subscribe(currency);
 
+        // Create initial purchase
+        CoinbaseOrderRequest init = new CoinbaseOrderRequest();
+        init.setSide(CoinbaseOrderRequest.BUY);
+        init.setFunds(String.valueOf(funds));
+        init.setProductId(currency.getLabel());
+
+        // Purchase funds
+        tradingService.initBuy(init);
+
+        // Create init job settings
         JobSettings settings = new JobSettings();
-        settings.setJobId(jobId);
         settings.setCurrency(currency.getLabel());
         settings.setMax(max);
         settings.setMin(min);
         settings.setFunds(funds);
         settings.setExpires(expires);
-        autoAppDao.createJob(settings);
+        autoAppDao.startOrUpdateJob(settings);
 
+        // Create init job status
         JobStatus status = new JobStatus();
-        status.setJobId(jobId);
         status.setCurrentFundsUsd(funds);
         status.setStartingFundsUsd(funds);
-        status.setGainsLosses(0);
-        status.setStatus(RUNNING);
         autoAppDao.updateJobStatus(status);
 
         // Bust the cache
@@ -62,6 +75,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
 
         JobStatus status = autoAppDao.getJobStatus(id);
         status.setStatus(FINISHED);
+        autoAppDao.updateJobStatus(status);
         return status;
     }
 

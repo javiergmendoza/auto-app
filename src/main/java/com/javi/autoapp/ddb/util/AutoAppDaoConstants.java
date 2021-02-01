@@ -2,13 +2,9 @@ package com.javi.autoapp.ddb.util;
 
 public interface AutoAppDaoConstants {
     String AUTO_APP_TABLE_NAME = "AutoApp";
-    String AUTO_APP_SETTINGS_ID = "AUTO_APP_SETTINGS";
     String JOB_SETTINGS_ID = "JOB_SETTINGS";
     String JOB_STATUS_ID = "JOB_STATUS";
     String HASH_KEY = "id";
-    String KEY = "k";
-    String PASSPHRASE = "p";
-    String SECRET = "s";
     String JOB_ID = "jid";
     String CURRENCY = "cur";
     String MAX = "max";
@@ -24,4 +20,7 @@ public interface AutoAppDaoConstants {
     String CROSSED_MAX_THRESHOLD = "maxt";
     String MAX_VALUE = "maxv";
     String SIZE = "size";
+    String PRICE = "price";
+    String FROZEN = "frz";
+    String SELL = "sell";
 }

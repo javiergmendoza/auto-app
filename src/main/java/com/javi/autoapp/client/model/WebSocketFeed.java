@@ -17,7 +17,7 @@ public class WebSocketFeed {
 
     private String reason;
     private String side;
-    private double price;
+    private String price;
 
     @JsonProperty("product_id")
     private String productId;

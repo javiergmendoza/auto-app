@@ -1,6 +1,7 @@
 package com.javi.autoapp.client;
 
 import com.javi.autoapp.config.AppConfig;
+import com.javi.autoapp.util.SignatureTool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -28,16 +29,14 @@ public class CoinbaseTraderClient {
     }
 
     public Mono<ClientResponse> trade(
-            String passphrase,
-            String key,
             String timestamp,
             String signature,
             String order) {
         return webClient.post()
                 .header(CB_ACCESS_SIGN, signature)
                 .header(CB_ACCESS_TIMESTAMP, timestamp)
-                .header(CB_ACCESS_PASSPHRASE, passphrase)
-                .header(CB_ACCESS_KEY, key)
+                .header(CB_ACCESS_PASSPHRASE, SignatureTool.PASSPHRASE)
+                .header(CB_ACCESS_KEY, SignatureTool.KEY)
                 .body(Mono.just(order), String.class)
                 .exchange();
     }

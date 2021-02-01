@@ -19,6 +19,9 @@ services:
       context: .
     command: java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar auto-app.jar
     environment:
+      - COINBASE_KEY=6688a7a02ac85946d510a262e8446378
+      - COINBASE_PASS=test
+      - COINBASE_SECRET=zvi3zR07zIEV2+dDr/L/Bm+Ih+cfncTZZTVlZVG+N9vkX6OITQcmNayG1u6miL9RwctrCMX4l5EATJKfsCPiOQ==
       - SPRING_PROFILES_ACTIVE=nogit,development,security-disabled
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
@@ -33,5 +36,14 @@ services:
     expose:
       - 5005
       - 8081
+
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/16
+          gateway: 10.5.0.1
+
 volumes:
   localstack-datavolume:

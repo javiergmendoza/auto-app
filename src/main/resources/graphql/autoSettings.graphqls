@@ -4,12 +4,9 @@ type JobStatus {
     gainsLosses: Float!
     currentFundsUsd: Float!
     startingFundsUsd: Float!
-    crossedMinThreshold: Boolean
-    minValue: Float
-    crossedMaxThreshold: Boolean
-    maxValue: Float
     currency: Currency
     size: Float
+    price: Float
 }
 
 enum Status {

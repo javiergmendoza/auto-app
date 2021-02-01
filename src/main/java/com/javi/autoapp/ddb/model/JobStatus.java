@@ -11,6 +11,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_STATUS_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRICE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SIZE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.STARTING_FUNDS_USD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.STATUS;
@@ -22,6 +23,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedEnum;
 import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.graphql.type.Status;
+import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -34,7 +36,7 @@ public class JobStatus {
     private String id = JOB_STATUS_ID;
 
     @DynamoDBRangeKey(attributeName = JOB_ID)
-    private String jobId = "";
+    private String jobId = UUID.randomUUID().toString();
 
     @DynamoDBTypeConvertedEnum
     @DynamoDBAttribute(attributeName = STATUS)
@@ -49,22 +51,13 @@ public class JobStatus {
     @DynamoDBAttribute(attributeName = STARTING_FUNDS_USD)
     private double startingFundsUsd = 0.0;
 
-    @DynamoDBAttribute(attributeName = CROSSED_MIN_THRESHOLD)
-    private boolean crossedMinThreshold = false;
-
-    @DynamoDBAttribute(attributeName = MIN_VALUE)
-    private double minValue = 0.0;
-
-    @DynamoDBAttribute(attributeName = CROSSED_MAX_THRESHOLD)
-    private boolean crossedMaxThreshold = false;
-
-    @DynamoDBAttribute(attributeName = MAX_VALUE)
-    private double maxValue = 0.0;
-
     @DynamoDBTypeConvertedEnum
     @DynamoDBAttribute(attributeName = CURRENCY)
     private Currency currency = Currency.USD;
 
     @DynamoDBAttribute(attributeName = SIZE)
     private double size = 0.0;
+
+    @DynamoDBAttribute(attributeName = PRICE)
+    private double price = 0.0;
 }

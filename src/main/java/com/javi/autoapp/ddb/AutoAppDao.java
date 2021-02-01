@@ -2,11 +2,8 @@ package com.javi.autoapp.ddb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.javi.autoapp.ddb.model.AutoAppSettings;
 import com.javi.autoapp.ddb.model.JobSettings;
 import com.javi.autoapp.ddb.model.JobStatus;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
@@ -20,38 +17,20 @@ public class AutoAppDao {
     private final DynamoDBMapper mapper;
 
     @Cacheable
-    public AutoAppSettings getAutoAppSettings() {
-        AutoAppSettings settings = new AutoAppSettings();
-        return settings;
-        //return mapper.load(settings);
-    }
-
-    @Cacheable
-    public JobSettings getJobSettings(String jobId) {
-        JobSettings settings = new JobSettings();
-        settings.setJobId(jobId);
-        return mapper.load(settings);
-    }
-
-    @Cacheable
     public List<JobSettings> getAllJobSettings() {
         DynamoDBQueryExpression<JobSettings> query = new DynamoDBQueryExpression<>();
         query.withHashKeyValues(new JobSettings());
         return mapper.query(JobSettings.class, query);
     }
 
-    public void createJob(JobSettings job) {
+    public void startOrUpdateJob(JobSettings job) {
         mapper.save(job);
     }
 
-    public void deleteJob(JobSettings job) {
+    public void stopJob(String id) {
+        JobSettings job = new JobSettings();
+        job.setJobId(id);
         mapper.delete(job);
-    }
-
-    public void stopJob(String jobId) {
-        JobSettings settings = getJobSettings(jobId);
-        settings.setExpires(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString());
-        mapper.save(settings);
     }
 
     @Cacheable
