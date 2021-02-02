@@ -2,6 +2,7 @@ type JobStatus {
     jobId: ID!
     status: Status!
     gainsLosses: Float!
+    currentValueUsd: Float!
     currentFundsUsd: Float!
     startingFundsUsd: Float!
     currency: Currency
@@ -10,7 +11,9 @@ type JobStatus {
 }
 
 enum Status {
+    PENDING,
     RUNNING,
+    STOPPED,
     FINISHED
 }
 
@@ -57,11 +60,17 @@ enum Currency {
 
 # Gets status of running job(s)
 type Query {
+    # Returns total amount of gains or losses for all jobs
+    totalGainsLosses:Float
+
     # Gets status of a running job
     job(id: ID!):JobStatus
 
     # Gets statuses of all running jobs
     jobs:[JobStatus]
+
+    # Gets ticker feeds being recieved
+    activeFeeds:[Currency]
 }
 
 # Start a new job
@@ -70,10 +79,12 @@ type Mutation {
     createJob(
         # Currency tag
         currency: Currency!,
-        # Max threshold for sell
-        max: Float!,
-        # Min threshold for buy
-        min: Float!,
+        # Max yield for sell
+        percentageYieldThreshold: Float!,
+        # Max yield for sell
+        totalPercentageYieldThreshold: Float = 10.0,
+        # Floor threshoold to buy
+        floor: Float!,
         # Starting amount dollars to invest
         funds: Float!,
         # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z

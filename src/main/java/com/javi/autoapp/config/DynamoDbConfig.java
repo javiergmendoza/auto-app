@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Data
-@Profile({"staging", "production"})
 @Configuration
 @RequiredArgsConstructor
 public class DynamoDbConfig {

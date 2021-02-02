@@ -10,7 +10,6 @@ import javax.websocket.DeploymentException;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -18,7 +17,6 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Slf4j
 @Data
 @EnableCaching
 @Configuration
@@ -43,19 +41,5 @@ public class AppConfig {
                 CoinbaseTickerWebSocket.class,
                 URI.create(coinbaseWebSocketUri)
         );
-    }
-
-    @Bean
-    public Caffeine caffeineConfig() {
-        return Caffeine.newBuilder()
-                .weakKeys()
-                .expireAfterWrite(60, TimeUnit.MINUTES);
-    }
-
-    @Bean
-    public CacheManager cacheManager(Caffeine caffeine) {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager("autoAppConfigDao");
-        caffeineCacheManager.setCaffeine(caffeine);
-        return caffeineCacheManager;
     }
 }

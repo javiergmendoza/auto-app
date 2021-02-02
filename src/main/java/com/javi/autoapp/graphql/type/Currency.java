@@ -1,5 +1,6 @@
 package com.javi.autoapp.graphql.type;
 
+import java.util.HashMap;
 import lombok.Getter;
 
 public enum Currency {
@@ -44,8 +45,19 @@ public enum Currency {
 
     @Getter
     private final String label;
+    private static final HashMap<String, Currency> MAP = new HashMap<>();
 
     Currency(String label) {
         this.label = label;
+    }
+
+    public static Currency getByLabel(String label) {
+        return MAP.get(label);
+    }
+
+    static {
+        for (Currency field : Currency.values()) {
+            MAP.put(field.getLabel(), field);
+        }
     }
 }

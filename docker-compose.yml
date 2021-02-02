@@ -19,9 +19,9 @@ services:
       context: .
     command: java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar auto-app.jar
     environment:
-      - COINBASE_KEY=6688a7a02ac85946d510a262e8446378
-      - COINBASE_PASS=test
-      - COINBASE_SECRET=zvi3zR07zIEV2+dDr/L/Bm+Ih+cfncTZZTVlZVG+N9vkX6OITQcmNayG1u6miL9RwctrCMX4l5EATJKfsCPiOQ==
+      - COINBASE_KEY=df99cabcf344bac80d58ca831b687109
+      - COINBASE_PASS=sandbox
+      - COINBASE_SECRET=txCrOq624r5zfUfjLJsfzgHldV6ScJ2TPRO2zXCv1VQNuWByEREevseZMrLYcl9s5a4TYmUJiJGQD+eqGLlA4A==
       - SPRING_PROFILES_ACTIVE=nogit,development,security-disabled
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY

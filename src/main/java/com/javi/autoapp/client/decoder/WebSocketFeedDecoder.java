@@ -2,17 +2,17 @@ package com.javi.autoapp.client.decoder;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.javi.autoapp.client.model.WebSocketFeed;
+import com.javi.autoapp.client.model.CoinbaseTicker;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-public class WebSocketFeedDecoder implements Decoder.Text<WebSocketFeed> {
+public class WebSocketFeedDecoder implements Decoder.Text<CoinbaseTicker> {
     @Override
-    public WebSocketFeed decode(String s) throws DecodeException {
+    public CoinbaseTicker decode(String s) throws DecodeException {
         ObjectMapper mapper = new ObjectMapper();
         try {
-            return mapper.readValue(s, WebSocketFeed.class);
+            return mapper.readValue(s, CoinbaseTicker.class);
         } catch (JsonProcessingException e) {
             throw new DecodeException(s, e.getMessage(), e);
         }

@@ -1,16 +1,13 @@
 package com.javi.autoapp.ddb.model;
 
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.AUTO_APP_TABLE_NAME;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_MAX_THRESHOLD;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_MIN_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CURRENCY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CURRENT_FUNDS_USD;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CURRENT_VALUE_USD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.GAINS_LOSSES;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_STATUS_ID;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_VALUE;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRICE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SIZE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.STARTING_FUNDS_USD;
@@ -23,7 +20,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConvertedEnum;
 import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.graphql.type.Status;
-import java.util.UUID;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -36,14 +32,17 @@ public class JobStatus {
     private String id = JOB_STATUS_ID;
 
     @DynamoDBRangeKey(attributeName = JOB_ID)
-    private String jobId = UUID.randomUUID().toString();
+    private String jobId;
 
     @DynamoDBTypeConvertedEnum
     @DynamoDBAttribute(attributeName = STATUS)
-    private Status status = Status.RUNNING;
+    private Status status = Status.PENDING;
 
     @DynamoDBAttribute(attributeName = GAINS_LOSSES)
     private double gainsLosses = 0.0;
+
+    @DynamoDBAttribute(attributeName = CURRENT_VALUE_USD)
+    private double currentValueUsd = 0.0;
 
     @DynamoDBAttribute(attributeName = CURRENT_FUNDS_USD)
     private double currentFundsUsd = 0.0;
@@ -53,7 +52,7 @@ public class JobStatus {
 
     @DynamoDBTypeConvertedEnum
     @DynamoDBAttribute(attributeName = CURRENCY)
-    private Currency currency = Currency.USD;
+    private Currency currency;
 
     @DynamoDBAttribute(attributeName = SIZE)
     private double size = 0.0;

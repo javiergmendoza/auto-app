@@ -3,8 +3,18 @@ spring:
     name: autoapp
   main:
     log-startup-info: false
-server:
+  cache:
+    cache-names: coinbaseClient
+    caffeine:
+      spec: maximumSize=500,expireAfterAccess=600s
   port: 8080
+
+resilience4j.ratelimiter:
+  instances:
+    coinbaseClient:
+      limitForPeriod: 3
+      limitRefreshPeriod: 1s
+      timeoutDuration: 1s
 
 coinbaseWebSocketUri: wss://ws-feed.pro.coinbase.com
 coinbaseApiUri: https://api.pro.coinbase.com/orders

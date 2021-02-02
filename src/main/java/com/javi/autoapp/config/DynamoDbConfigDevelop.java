@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile({"development"})
+@Profile({"test"})
 public class DynamoDbConfigDevelop extends DynamoDbConfig {
 
     public DynamoDbConfigDevelop(AppConfig appConfig) {

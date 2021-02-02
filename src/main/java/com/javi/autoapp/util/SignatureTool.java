@@ -1,49 +1,47 @@
 package com.javi.autoapp.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.javi.autoapp.client.model.CoinbaseOrderRequest;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
 
 public class SignatureTool {
     public static final String KEY = System.getenv("COINBASE_KEY");
     public static final String PASSPHRASE = System.getenv("COINBASE_PASS");
     public static final String SECRET = System.getenv("COINBASE_SECRET");
-    private static final String ORDER_METHOD = "POST";
-    private static final String ORDER_REQUEST_PATH = "/orders";
-    private static final String WEB_SOCKET_METHOD = "GET";
-    private static final String WEB_SOCKET_REQUEST_PATH = "/users/self/verify";
+
+    private static final String POST_ORDER_REQUEST_PATH = "/orders";
+    private static final String GET_ORDER_REQUEST_PATH = "/orders/client:{id}";
+
+    public static String getRequestPath() {
+        return POST_ORDER_REQUEST_PATH;
+    }
+
+    public static String getRequestPath(String id) {
+        return UriComponentsBuilder.newInstance()
+                .path(GET_ORDER_REQUEST_PATH)
+                .buildAndExpand(id)
+                .toUriString();
+    }
 
     public static String getSignature(
             String timestamp,
-            CoinbaseOrderRequest order) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        return sign(timestamp, ORDER_METHOD, ORDER_REQUEST_PATH, order);
+            String method,
+            String requestPath) throws InvalidKeyException, NoSuchAlgorithmException {
+        return getSignature(timestamp, method, requestPath, null);
     }
 
-    public static String getWebSocketSignature(
-            String timestamp
-    ) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        return sign(timestamp, WEB_SOCKET_METHOD, WEB_SOCKET_REQUEST_PATH, null);
-    }
-
-    private static String sign(
+    public static String getSignature(
             String timestamp,
             String method,
             String requestPath,
-            CoinbaseOrderRequest order) throws JsonProcessingException, NoSuchAlgorithmException, InvalidKeyException {
-        ObjectMapper mapper = new ObjectMapper();
-        String body = "";
-        if (order != null) {
-            body = mapper.writeValueAsString(order);
+            String body) throws NoSuchAlgorithmException, InvalidKeyException {
+        String signature = timestamp + method + requestPath;
+        if (body != null) {
+            signature += body;
         }
-        String signature = timestamp + method + requestPath + body;
-
         Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
         SecretKeySpec keySpec = new SecretKeySpec(Base64.getDecoder().decode(SECRET), "HmacSHA256");
         sha256_HMAC.init(keySpec);
