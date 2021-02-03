@@ -1,6 +1,6 @@
 buildscript {
     ext {
-        springBootVersion = '2.2.4.RELEASE'
+        springBootVersion = '2.0.9.RELEASE'
     }
     repositories {
         mavenCentral()
@@ -52,13 +52,12 @@ ext {
 }
 
 dependencies {
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-cache'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-websocket'
     compile group: 'com.github.ben-manes.caffeine', name: 'caffeine'
-    compile group: 'org.springframework', name: 'spring-websocket'
 
     // JSP
     compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper'

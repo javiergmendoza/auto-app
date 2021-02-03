@@ -1,41 +1,9 @@
 version: '3'
 services:
-  localstack:
-    #image: 264606497040.dkr.ecr.us-east-1.amazonaws.com/ib-localstack:0.8 #fifo sqs writes do not work
-    image: localstack/localstack
-    environment:
-      - SERVICES=${SERVICES-dynamodb}
-      - DEBUG=${DEBUG- }
-      - PORT_WEB_UI=9200
-      - DATA_DIR=/tmp/localstack/data
-      - DOCKER_HOST=unix:///var/run/docker.sock
-    volumes:
-      - localstack-datavolume:/tmp/localstack
-      #- ./data:/tmp/localstack #mount for local development
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    network_mode: "service:auto-app"
-  auto-app:
+  tomcat:
     build:
       context: .
-    command: java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar auto-app.jar
-    environment:
-      - COINBASE_KEY=df99cabcf344bac80d58ca831b687109
-      - COINBASE_PASS=sandbox
-      - COINBASE_SECRET=txCrOq624r5zfUfjLJsfzgHldV6ScJ2TPRO2zXCv1VQNuWByEREevseZMrLYcl9s5a4TYmUJiJGQD+eqGLlA4A==
-      - SPRING_PROFILES_ACTIVE=nogit,development,security-disabled
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
-      - AWS_REGION
-      - AWS_CBOR_DISABLE=true  #This is necessary for localstack kinesis
-    ports:
-      - 5005:5005
-      - 4567-4582:4567-4582
-      - 8080:8080
-      - 8081:8081
-      - 80:80
-    expose:
-      - 5005
-      - 8081
+      dockerfile: Dockerfile
 
 networks:
   vpcbr:
@@ -44,6 +12,3 @@ networks:
       config:
         - subnet: 10.5.0.0/16
           gateway: 10.5.0.1
-
-volumes:
-  localstack-datavolume:

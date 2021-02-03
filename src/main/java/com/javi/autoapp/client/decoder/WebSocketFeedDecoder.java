@@ -1,8 +1,8 @@
 package com.javi.autoapp.client.decoder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javi.autoapp.client.model.CoinbaseTicker;
+import java.io.IOException;
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
@@ -13,7 +13,7 @@ public class WebSocketFeedDecoder implements Decoder.Text<CoinbaseTicker> {
         ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readValue(s, CoinbaseTicker.class);
-        } catch (JsonProcessingException e) {
+        } catch (IOException e) {
             throw new DecodeException(s, e.getMessage(), e);
         }
     }

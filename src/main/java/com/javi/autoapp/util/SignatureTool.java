@@ -8,9 +8,9 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.web.util.UriComponentsBuilder;
 
 public class SignatureTool {
-    public static final String KEY = System.getenv("COINBASE_KEY");
-    public static final String PASSPHRASE = System.getenv("COINBASE_PASS");
-    public static final String SECRET = System.getenv("COINBASE_SECRET");
+    public static final String KEY = System.getProperty("COINBASE_KEY");
+    public static final String PASSPHRASE = System.getProperty("COINBASE_PASS");
+    public static final String SECRET = System.getProperty("COINBASE_SECRET");
 
     private static final String POST_ORDER_REQUEST_PATH = "/orders";
     private static final String GET_ORDER_REQUEST_PATH = "/orders/client:{id}";

@@ -1,15 +1,11 @@
-FROM openjdk:11
+FROM tomcat:8.5-jdk11-corretto
 
-ENV HOME=/home/app
-ENV APP_HOME=$HOME/auto-app
-ENV PATH=.:$PATH
-RUN mkdir -p $APP_HOME
-WORKDIR $APP_HOME
+ENV AWS_SECRET_ACCESS_KEY=VGRwjvOpyp93OaHGudwZdoQM7z40XJJpe0IjdB50
+ENV AWS_REGION=us-east-1
+ENV AWS_ACCESS_KEY_ID=AKIA5MQUJJVDQE5BYNFT
 
-COPY auto-app.conf $APP_HOME/auto-app.conf
-COPY build/libs/auto-app*.jar $APP_HOME/auto-app.jar
-COPY scripts/bootrunner.sh $APP_HOME/scripts/bootrunner.sh
+ADD build/libs/auto-app*.war /usr/local/tomcat/webapps/auto-app.war
 
 EXPOSE 8080
 
-CMD ["scripts/bootrunner.sh"]
+CMD ["catalina.sh", "run"]
