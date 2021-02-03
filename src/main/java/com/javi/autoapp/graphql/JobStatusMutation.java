@@ -20,14 +20,16 @@ public class JobStatusMutation implements GraphQLMutationResolver {
 
     public JobStatus createJob(
             Currency currency,
-            Double percentageYieldThreshold,
-            Double totalPercentageYieldThreshold,
-            Double floor,
-            Double funds,
+            int precisionFromCent,
+            double percentageYieldThreshold,
+            double totalPercentageYieldThreshold,
+            double floor,
+            double funds,
             String expires) {
         // Create init job settings
         JobSettings settings = new JobSettings();
         settings.setProductId(currency.getLabel());
+        settings.setPrecisionFromCent(precisionFromCent);
         settings.setPercentageYieldThreshold(percentageYieldThreshold);
         settings.setTotalPercentageYieldThreshold(totalPercentageYieldThreshold);
         settings.setFloor(floor);

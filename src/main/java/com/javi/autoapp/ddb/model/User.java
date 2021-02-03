@@ -1,9 +1,7 @@
 package com.javi.autoapp.ddb.model;
 
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ENABLED_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PASSWORD;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.TOKEN_ID;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.USERNAME;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.USER_TABLE_NAME;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -18,14 +16,8 @@ import lombok.NoArgsConstructor;
 public class User {
 
     @DynamoDBHashKey(attributeName = HASH_KEY)
+    private String id;
+
+    @DynamoDBAttribute(attributeName = USERNAME)
     private String username;
-
-    @DynamoDBAttribute(attributeName = PASSWORD)
-    private String password;
-
-    @DynamoDBAttribute(attributeName = TOKEN_ID)
-    private String token;
-
-    @DynamoDBAttribute(attributeName = ENABLED_ID)
-    private Boolean enabled;
 }

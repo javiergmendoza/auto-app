@@ -79,6 +79,8 @@ type Mutation {
     createJob(
         # Currency tag
         currency: Currency!,
+        # Which Dollar tenths to round. Example: 0 = X.XX and 1 = X.X0
+        precisionFromCent: Int!
         # Max yield for sell
         percentageYieldThreshold: Float!,
         # Max yield for sell

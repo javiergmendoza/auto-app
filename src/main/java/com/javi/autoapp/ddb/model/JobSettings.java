@@ -15,6 +15,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_PERCENTAGE_YIELD
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.FLOOR;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PENDING;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRECISION_FROM_CENT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRODUCT_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SELL;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SIZE;
@@ -45,6 +46,9 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = SELL)
     private boolean sell = false;
+
+    @DynamoDBAttribute(attributeName = PRECISION_FROM_CENT)
+    private int precisionFromCent = 0;
 
     @DynamoDBAttribute(attributeName = PERCENTAGE_YIELD_THRESHOLD)
     private double percentageYieldThreshold = 1.1;

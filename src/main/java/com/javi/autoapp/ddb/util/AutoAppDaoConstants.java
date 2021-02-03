@@ -3,15 +3,14 @@ package com.javi.autoapp.ddb.util;
 public interface AutoAppDaoConstants {
     String USER_TABLE_NAME = "User";
     String AUTO_APP_TABLE_NAME = "AutoApp";
-    String PASSWORD = "pid";
-    String TOKEN_ID = "tid";
-    String ENABLED_ID = "ebl";
+    String USERNAME = "usr";
     String JOB_SETTINGS_ID = "JOB_SETTINGS";
     String JOB_STATUS_ID = "JOB_STATUS";
     String HASH_KEY = "id";
     String JOB_ID = "jid";
     String CURRENCY = "cur";
     String PRODUCT_ID = "pid";
+    String PRECISION_FROM_CENT = "presc";
     String PERCENTAGE_YIELD_THRESHOLD = "maxyt";
     String TOTAL_PERCENTAGE_YIELD_THRESHOLD = "tmaxyt";
     String FLOOR = "floor";

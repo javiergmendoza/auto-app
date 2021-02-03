@@ -8,6 +8,14 @@ spring:
     caffeine:
       spec: maximumSize=500,expireAfterAccess=600s
   port: 8080
+  mvc:
+    view:
+      prefix: /WEB-INF/jsp/
+      suffix: .jsp
+  management:
+    endpoints.web.exposure.include: info, health, metrics, env, beans, loggers
+    endpoints.web.base-path: /
+    endpoint.health.show-details: always
 
 resilience4j.ratelimiter:
   instances:

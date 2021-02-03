@@ -41,6 +41,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class AutoTradingService implements Runnable, MessageHandler.Whole<CoinbaseTicker> {
+    private static final double BASE_PRECISION = 100.0;
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
     private static final double MINIMUM_FINAL_PERCENT_YIELD = 0.75;
@@ -247,7 +248,9 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                     if (priceString == null) {
                         return;
                     }
-                    double price = Double.parseDouble(priceString);
+                    double absolutePrice = Double.parseDouble(priceString);
+                    double precision = Math.pow(10, BASE_PRECISION - job.getPrecisionFromCent());
+                    double price = Math.round(absolutePrice * precision) / precision;
 
                     if (job.isInit()) {
                         try {
@@ -307,10 +310,11 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
 
     private void crest(JobSettings job, double price)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        double expectedSale = price * job.getSize();
-        double expectedFees = expectedSale * COINBASE_PERCENTAGE;
-        double expectedFunds = expectedSale - expectedFees;
-        double percentYield = expectedFunds / job.getFunds();
+        // starting sale = 91.2710425552 / 0.31 = 294.42271792 - (294.42271792 * 0.0149) = 290.035819423
+        double expectedSale = price * job.getSize(); // 0.35 * 290.035819423 = 101.512536798
+        double expectedFees = expectedSale * COINBASE_PERCENTAGE; // 101.512536798 * 0.0149 = 1.51253679829
+        double expectedFunds = expectedSale - expectedFees; // 101.512536798 - 1.51253679829 = 100
+        double percentYield = expectedFunds / job.getFunds(); // 100 / 91.2710425552 (bought at 0.31) = 1.09563775323
 
         if (job.isActive()) {
             handlePercentYieldCheck(job, percentYield, true, false);
@@ -322,10 +326,10 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
 
     private void trough(JobSettings job, double price)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        double expectedBuy = job.getFunds() / price;
-        double expectedFees = expectedBuy * COINBASE_PERCENTAGE;
-        double expectedSize = expectedBuy - expectedFees;
-        double percentYield = expectedSize / job.getSize();
+        double expectedBuy = job.getFunds() / price; // 100 / 0.31 = 322.580645161
+        double expectedFees = expectedBuy * COINBASE_PERCENTAGE; // 322.580645161 * 0.0149 = 4.8064516129
+        double expectedSize = expectedBuy - expectedFees; // 322.580645161 - 4.8064516129 = 317.774193548
+        double percentYield = expectedSize / job.getSize(); // 317.774193548 / 290.035819423 (size that was initally sold) = 1.09563775323
 
         handlePercentYieldCheck(job, percentYield, false, false);
     }
@@ -335,17 +339,14 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
             double percentYield,
             boolean isSell,
             boolean finalize) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}",
+        log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}, PercentYieldWant: {}",
                 job.getJobId(),
                 job.getProductId(),
-                percentYield);
-        if (job.isCrossedYieldThreshold() && percentYield < job.getMaxPercentageYield()) {
-            if (finalize && percentYield < MINIMUM_FINAL_PERCENT_YIELD) {
-                log.error("ERROR!!! This final sale would end up with greater losses than minimum loss threshold {}. Net total loss percentage would be: {}",
-                        MINIMUM_FINAL_PERCENT_YIELD, percentYield);
-                return;
-            }
-            else if (percentYield < 1.0) {
+                percentYield,
+                job.getPercentageYieldThreshold());
+        if ((job.isCrossedYieldThreshold() && percentYield < job.getMaxPercentageYield())
+                || (finalize && percentYield > MINIMUM_FINAL_PERCENT_YIELD)) {
+            if (!finalize && percentYield < 1.0) {
                 log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
                 return;
             } else if (percentYield < WARNING_DELTA) {
@@ -370,6 +371,8 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
             request.setProductId(job.getProductId());
             trade(request);
             return;
+        } else if (finalize && percentYield < MINIMUM_FINAL_PERCENT_YIELD) {
+            log.warn("WARNING!!! Job ID: {} has lost more than 25% of initial funds. Current yield: {}", job.getJobId(), percentYield);
         }
 
         // Set top value
