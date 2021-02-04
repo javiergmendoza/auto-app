@@ -350,12 +350,13 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
             boolean isSell,
             boolean finalize,
             double price) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}, PercentYieldWant: {}, CurrentPrice: {}",
+        log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}, PercentYieldWant: {}, CurrentPrice: {}, PriceWanted: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
                 job.getPercentageYieldThreshold(),
-                price);
+                price,
+                price * job.getPercentageYieldThreshold());
         if ((job.isCrossedYieldThreshold() && percentYield < job.getMaxPercentageYield())
                 || (finalize && percentYield > MINIMUM_FINAL_PERCENT_YIELD)) {
             if (!finalize && percentYield < 1.0) {
