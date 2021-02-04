@@ -51,11 +51,14 @@ ext {
     awsSDKVersion = "1.11.259"
 }
 
+ext['tomcat.version'] = '8.5.60'
+
 dependencies {
+    providedRuntime group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat'
+
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-cache'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-websocket'
     compile group: 'com.github.ben-manes.caffeine', name: 'caffeine'
 
