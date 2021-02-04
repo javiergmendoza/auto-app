@@ -13,6 +13,7 @@ src/main/resources/git.properties
 /newrelic/newrelic.jar
 datadog/
 .terraform/
+*.log
 
 ### STS ###
 .apt_generated

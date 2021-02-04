@@ -53,9 +53,17 @@ ext {
 
 ext['tomcat.version'] = '8.5.60'
 
+bootWar {
+    from('src/main/resources/ebextensions') {
+        into ".ebextensions";
+    }
+}
+
 dependencies {
     providedRuntime group: 'org.springframework.boot', name: 'spring-boot-starter-tomcat'
 
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-logging'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-webflux'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-cache'
@@ -72,7 +80,7 @@ dependencies {
     compile group: 'org.springframework.security', name: 'spring-security-config', version: '4.2.20.RELEASE'
 
     // Rate limiter
-    compile group: 'io.github.resilience4j', name: 'resilience4j-spring-boot2', version: '1.7.0'
+    compile group: 'io.github.resilience4j', name: 'resilience4j-spring-boot2', version: '0.13.2'
 
     // GraphQl
     compile group: 'com.graphql-java', name: 'graphql-spring-boot-starter', version: '5.0.2'

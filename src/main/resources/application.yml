@@ -13,6 +13,9 @@ spring:
       prefix: /WEB-INF/jsp/
       suffix: .jsp
 
+logging.file: /var/app/current/auto-app.log
+logging.level.root: INFO
+
 management:
   endpoints.web.exposure.include: info, health, metrics, env, beans, loggers
   endpoint.health.show-details: always

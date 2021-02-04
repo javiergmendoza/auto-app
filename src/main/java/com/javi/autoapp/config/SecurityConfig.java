@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public static final String AUTO_APP_USERNAME = System.getProperty("AUTO_APP_USERNAME");
-    public static final String AUTO_APP_PASSPHRASE = System.getProperty("AUTO_APP_PASSPHRASE");
+    public static final String AUTO_APP_PASSPHRASE = System.getProperty("AUTO_APP_PASSWORD");
 
     @Autowired
     PasswordEncoder passwordEncoder;

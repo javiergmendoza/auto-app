@@ -95,12 +95,6 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
     @SneakyThrows
     @Override
     public void run(){
-        log.info(System.getProperty("AUTO_APP_USERNAME"));
-        log.info(System.getProperty("AUTO_APP_PASSPHRASE"));
-        log.info(System.getProperty("COINBASE_KEY"));
-        log.info(System.getProperty("COINBASE_PASS"));
-        log.info(System.getProperty("COINBASE_SECRET"));
-
         if (bustCache) {
             CacheHelper.bustCache(cacheManager);
             bustCache = false;
