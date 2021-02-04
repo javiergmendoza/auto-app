@@ -1,9 +1,7 @@
 package com.javi.autoapp.ddb.util;
 
 public interface AutoAppDaoConstants {
-    String USER_TABLE_NAME = "User";
     String AUTO_APP_TABLE_NAME = "AutoApp";
-    String USERNAME = "usr";
     String JOB_SETTINGS_ID = "JOB_SETTINGS";
     String JOB_STATUS_ID = "JOB_STATUS";
     String HASH_KEY = "id";

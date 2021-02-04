@@ -12,10 +12,12 @@ spring:
     view:
       prefix: /WEB-INF/jsp/
       suffix: .jsp
-  management:
-    endpoints.web.exposure.include: info, health, metrics, env, beans, loggers
-    endpoints.web.base-path: /
-    endpoint.health.show-details: always
+
+management:
+  endpoints.web.exposure.include: info, health, metrics, env, beans, loggers
+  endpoint.health.show-details: always
+logging:
+  config: classpath:logback-spring.xml
 
 resilience4j.ratelimiter:
   instances:
