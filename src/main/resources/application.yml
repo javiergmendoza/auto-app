@@ -16,8 +16,6 @@ spring:
 management:
   endpoints.web.exposure.include: info, health, metrics, env, beans, loggers
   endpoint.health.show-details: always
-logging:
-  config: classpath:logback-spring.xml
 
 resilience4j.ratelimiter:
   instances:
