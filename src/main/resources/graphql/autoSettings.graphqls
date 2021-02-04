@@ -79,11 +79,11 @@ type Mutation {
     createJob(
         # Currency tag
         currency: Currency!,
-        # Which Dollar tenths to round. Example: 0 = X.XX and 1 = X.X0
-        precisionFromCent: Int!
+        # Default = 0 = round to nearest dollar
+        precisionFromCent: Int = 0.0,
         # Max yield for sell
         percentageYieldThreshold: Float!,
-        # Max yield for sell
+        # Max yield for sell. Default = 10.0
         totalPercentageYieldThreshold: Float = 10.0,
         # Floor threshoold to buy
         floor: Float!,
@@ -91,6 +91,22 @@ type Mutation {
         funds: Float!,
         # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
         expires: String!
+    ):JobStatus
+
+    # Updates existing job
+    updateJob(
+        # Job ID to update
+        jobID: String!,
+        # Default = 0 = round to nearest dollar
+        precisionFromCent: Int
+        # Max yield for sell
+        percentageYieldThreshold: Float,
+        # Max yield for sell
+        totalPercentageYieldThreshold: Float,
+        # Floor threshoold to buy
+        floor: Float,
+        # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
+        expires: String
     ):JobStatus
 
     # Stops a running job

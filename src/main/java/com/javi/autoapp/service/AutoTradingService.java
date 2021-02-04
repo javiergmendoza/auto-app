@@ -41,7 +41,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class AutoTradingService implements Runnable, MessageHandler.Whole<CoinbaseTicker> {
-    private static final double BASE_PRECISION = 100.0;
+    private static final double BASE_PRECISION = 0.0; // Round to nearest dollar
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
     private static final double MINIMUM_FINAL_PERCENT_YIELD = 0.75;
@@ -101,6 +101,12 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         }
         List<JobSettings> jobs = autoAppDao.getAllJobSettings();
 
+        if (jobs.isEmpty()) {
+            return;
+        } else {
+            log.info("Processing {} jobs.", jobs.size());
+        }
+
         try {
             updateSubscribedCurrencies(jobs);
         } catch (JsonProcessingException error) {
@@ -126,6 +132,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
 
         // Only unsubscribe if there is anything to unsubscribe to
         if (!activeFeeds.isEmpty()) {
+            log.info("Clearing currency ticker feeds.");
             CoinbaseWebSocketSubscribe unsubscribe = new CoinbaseWebSocketSubscribe();
             unsubscribe.setType(CoinbaseWebSocketSubscribe.UNSUBSCRIBE);
             unsubscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
@@ -135,6 +142,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
 
         // Subscribe to required product IDs
         if (!productIds.isEmpty()) {
+            log.info("Subscribing to the following currency feeds: {}", productIds.toString());
             CoinbaseWebSocketSubscribe subscribe = new CoinbaseWebSocketSubscribe();
             subscribe.setType(CoinbaseWebSocketSubscribe.SUBSCRIBE);
             subscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
@@ -155,6 +163,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                     return expired || reachTotalYieldThreshold;
                 })
                 .forEach(job -> {
+                    log.info("Deactivating expired job: {}", job.getJobId());
                     job.setActive(false);
                     autoAppDao.startOrUpdateJob(job);
                     bustCache = true;
@@ -185,6 +194,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 } else {
                     resp.bodyToMono(CoinbaseOrderResponse.class).subscribe(order -> {
                         try {
+                            log.info("Finalized transaction for job ID: {}", job.getJobId());
                             updatePendingJob(order, job);
                         } catch (JsonProcessingException e) {
                             e.printStackTrace();
@@ -317,10 +327,10 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         double percentYield = expectedFunds / job.getFunds(); // 100 / 91.2710425552 (bought at 0.31) = 1.09563775323
 
         if (job.isActive()) {
-            handlePercentYieldCheck(job, percentYield, true, false);
+            handlePercentYieldCheck(job, percentYield, true, false, price);
         } else {
             double finalPercentYield = expectedFunds / job.getStartingFundsUsd();
-            handlePercentYieldCheck(job, finalPercentYield, true, true);
+            handlePercentYieldCheck(job, finalPercentYield, true, true, price);
         }
     }
 
@@ -331,19 +341,21 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         double expectedSize = expectedBuy - expectedFees; // 322.580645161 - 4.8064516129 = 317.774193548
         double percentYield = expectedSize / job.getSize(); // 317.774193548 / 290.035819423 (size that was initally sold) = 1.09563775323
 
-        handlePercentYieldCheck(job, percentYield, false, false);
+        handlePercentYieldCheck(job, percentYield, false, false, price);
     }
 
     private void handlePercentYieldCheck(
             JobSettings job,
             double percentYield,
             boolean isSell,
-            boolean finalize) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}, PercentYieldWant: {}",
+            boolean finalize,
+            double price) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
+        log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}, PercentYieldWant: {}, CurrentPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
-                job.getPercentageYieldThreshold());
+                job.getPercentageYieldThreshold(),
+                price);
         if ((job.isCrossedYieldThreshold() && percentYield < job.getMaxPercentageYield())
                 || (finalize && percentYield > MINIMUM_FINAL_PERCENT_YIELD)) {
             if (!finalize && percentYield < 1.0) {
@@ -393,6 +405,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 .filter(job -> !job.isActive())
                 .filter(job -> !job.isPending())
                 .forEach(job -> {
+                    log.info("Removing completed job: {}", job.getJobId());
                     autoAppDao.deleteJob(job);
                     bustCache = true;
                 });
