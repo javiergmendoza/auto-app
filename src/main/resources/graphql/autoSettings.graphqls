@@ -111,4 +111,7 @@ type Mutation {
 
     # Stops a running job
     stopJob(id: ID!):JobStatus
+
+    # Stops all running jobs
+    stopAllJobs:[JobStatus]
 }

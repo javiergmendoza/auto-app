@@ -10,7 +10,9 @@ import com.javi.autoapp.ddb.model.JobStatus;
 import com.javi.autoapp.util.CacheHelper;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.servlet.GenericGraphQLError;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
@@ -111,5 +113,23 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         status.setStatus(STOPPED);
         autoAppDao.updateJobStatus(status);
         return status;
+    }
+
+    public List<JobStatus> stopAllJobs() {
+        // Stop job
+        List<JobSettings> jobs = autoAppDao.getAllJobSettings();
+        jobs.forEach(job -> {
+            job.setActive(false);
+            autoAppDao.startOrUpdateJob(job);
+        });
+
+        // Bust the cache
+        CacheHelper.bustCache(cacheManager);
+
+        List<JobStatus> statuses = autoAppDao.getJobStatuses();
+        return statuses.stream().peek(status -> {
+            status.setStatus(STOPPED);
+            autoAppDao.updateJobStatus(status);
+        }).collect(Collectors.toList());
     }
 }
