@@ -79,8 +79,8 @@ type Mutation {
     createJob(
         # Currency tag
         currency: Currency!,
-        # Default = 0 = round to nearest dollar
-        precisionFromCent: Int = 0.0,
+        # Default = 0 = round to nearest dollar, Example: -1 = round to tenths, 1 = round to tens
+        precision: Int = 0.0,
         # Max yield for sell
         percentageYieldThreshold: Float!,
         # Max yield for sell. Default = 10.0
@@ -97,8 +97,8 @@ type Mutation {
     updateJob(
         # Job ID to update
         jobID: String!,
-        # Default = 0 = round to nearest dollar
-        precisionFromCent: Int
+        # Default = 0 = round to nearest dollar. Example: -1 = round to tenths, 1 = round to tens
+        precision: Int
         # Max yield for sell
         percentageYieldThreshold: Float,
         # Max yield for sell

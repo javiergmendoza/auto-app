@@ -48,7 +48,7 @@ public class JobSettings {
     private boolean sell = false;
 
     @DynamoDBAttribute(attributeName = PRECISION_FROM_CENT)
-    private int precisionFromCent = 0;
+    private int precision = 0;
 
     @DynamoDBAttribute(attributeName = PERCENTAGE_YIELD_THRESHOLD)
     private double percentageYieldThreshold = 1.1;

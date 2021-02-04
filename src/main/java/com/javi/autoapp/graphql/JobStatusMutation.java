@@ -20,21 +20,28 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class JobStatusMutation implements GraphQLMutationResolver {
+    private static final double MINIMUM_PERCENTAGE_YIELD = 1.02;
     private final CacheManager cacheManager;
     private final AutoAppDao autoAppDao;
 
     public JobStatus createJob(
             Currency currency,
-            int precisionFromCent,
+            int precision,
             double percentageYieldThreshold,
             double totalPercentageYieldThreshold,
             double floor,
             double funds,
-            String expires) {
+            String expires,
+            DataFetchingEnvironment environment) {
+        if (percentageYieldThreshold < MINIMUM_PERCENTAGE_YIELD) {
+            environment.getExecutionContext().addError(new GenericGraphQLError("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses."));
+            return null;
+        }
+
         // Create init job settings
         JobSettings settings = new JobSettings();
         settings.setProductId(currency.getLabel());
-        settings.setPrecisionFromCent(precisionFromCent);
+        settings.setPrecision(precision);
         settings.setPercentageYieldThreshold(percentageYieldThreshold);
         settings.setTotalPercentageYieldThreshold(totalPercentageYieldThreshold);
         settings.setFloor(floor);
@@ -60,7 +67,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
 
     public JobStatus updateJob(
             String jobID,
-            Optional<Integer> precisionFromCent,
+            Optional<Integer> precision,
             Optional<Double> percentageYieldThreshold,
             Optional<Double> totalPercentageYieldThreshold,
             Optional<Double> floor,
@@ -73,8 +80,13 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             return null;
         }
 
-        precisionFromCent.ifPresent(settings::setPrecisionFromCent);
+        if (percentageYieldThreshold.isPresent() && percentageYieldThreshold.get() < MINIMUM_PERCENTAGE_YIELD) {
+            environment.getExecutionContext().addError(new GenericGraphQLError("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses."));
+            return null;
+        }
+
         percentageYieldThreshold.ifPresent(settings::setPercentageYieldThreshold);
+        precision.ifPresent(settings::setPrecision);
         totalPercentageYieldThreshold.ifPresent(settings::setTotalPercentageYieldThreshold);
         floor.ifPresent(settings::setFloor);
         expires.ifPresent(settings::setExpires);

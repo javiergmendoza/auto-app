@@ -259,8 +259,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                         return;
                     }
                     double absolutePrice = Double.parseDouble(priceString);
-                    double precision = Math.pow(10, BASE_PRECISION - job.getPrecisionFromCent());
-                    double price = Math.round(absolutePrice * precision) / precision;
+                    double price = roundPrice(absolutePrice, job.getPrecision());
 
                     if (job.isInit()) {
                         try {
@@ -327,21 +326,29 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         double percentYield = expectedFunds / job.getFunds(); // 100 / 91.2710425552 (bought at 0.31) = 1.09563775323
 
         if (job.isActive()) {
-            handlePercentYieldCheck(job, percentYield, true, false, price);
+            // (1.1 * 91.2710425552) / (290.035819423 - (290.035819423 * 0.0149))
+            double priceWantedAbsolute = (job.getPercentageYieldThreshold() * job.getFunds()) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
+            double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
+            handlePercentYieldCheck(job, percentYield, true, false, price, priceWanted);
         } else {
             double finalPercentYield = expectedFunds / job.getStartingFundsUsd();
-            handlePercentYieldCheck(job, finalPercentYield, true, true, price);
+            double finalPriceWantedAbsolute = (MINIMUM_FINAL_PERCENT_YIELD * job.getStartingFundsUsd()) / job.getSize();
+            double finalPriceWanted = roundPrice(finalPriceWantedAbsolute, job.getPrecision());
+            handlePercentYieldCheck(job, finalPercentYield, true, true, price, finalPriceWanted);
         }
     }
 
     private void trough(JobSettings job, double price)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        double expectedBuy = job.getFunds() / price; // 100 / 0.31 = 322.580645161
-        double expectedFees = expectedBuy * COINBASE_PERCENTAGE; // 322.580645161 * 0.0149 = 4.8064516129
-        double expectedSize = expectedBuy - expectedFees; // 322.580645161 - 4.8064516129 = 317.774193548
-        double percentYield = expectedSize / job.getSize(); // 317.774193548 / 290.035819423 (size that was initally sold) = 1.09563775323
+        double expectedBuy = job.getFunds() / price; // 100 / 0.30 = 333.333333333
+        double expectedFees = expectedBuy * COINBASE_PERCENTAGE; // 333.333333333 * 0.0149 = 4.96666666666
+        double expectedSize = expectedBuy - expectedFees; // 333.333333333 - 4.96666666666 = 328.366666666
+        double percentYield = expectedSize / job.getSize(); // 328.366666666 / 290.035819423 (size that was initally sold) = 1.09563775323
+        // 100 / ((1.1 * 290.035819423) / (1 - 0.0149))
+        double priceWantedAbsolute = job.getFunds() / ((job.getPercentageYieldThreshold() * job.getSize()) / (1 - COINBASE_PERCENTAGE));
+        double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
 
-        handlePercentYieldCheck(job, percentYield, false, false, price);
+        handlePercentYieldCheck(job, percentYield, false, false, price, priceWanted);
     }
 
     private void handlePercentYieldCheck(
@@ -349,14 +356,15 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
             double percentYield,
             boolean isSell,
             boolean finalize,
-            double price) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
+            double price,
+            double priceWanted) throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         log.info("Checking running jobId: {} - ProductId: {}, PercentYield: {}, PercentYieldWant: {}, CurrentPrice: {}, PriceWanted: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
                 job.getPercentageYieldThreshold(),
                 price,
-                price * job.getPercentageYieldThreshold());
+                priceWanted);
         if ((job.isCrossedYieldThreshold() && percentYield < job.getMaxPercentageYield())
                 || (finalize && percentYield > MINIMUM_FINAL_PERCENT_YIELD)) {
             if (!finalize && percentYield < 1.0) {
@@ -430,5 +438,10 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 resp.bodyToMono(String.class).subscribe(error -> log.error("Failed to place order. Error: {}", error));
             }
         });
+    }
+
+    private double roundPrice(double absolutePrice, double precision) {
+        double precisionPlace = Math.pow(10, BASE_PRECISION - precision);
+        return Math.round(absolutePrice * precisionPlace) / precisionPlace;
     }
 }
