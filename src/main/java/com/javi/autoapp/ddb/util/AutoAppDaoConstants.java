@@ -29,4 +29,5 @@ public interface AutoAppDaoConstants {
     String PENDING = "pend";
     String SELL = "sell";
     String INIT = "init";
+    String INCREASE_FUNDS_BY = "incby";
 }

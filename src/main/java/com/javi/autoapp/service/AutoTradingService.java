@@ -114,9 +114,9 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         }
 
         deactivateCompletedJobs(jobs);
+        cleanupCompletedJobs(jobs);
         checkPendingOrders(jobs);
         autoTrade(jobs);
-        cleanupCompletedJobs(jobs);
     }
 
     private void updateSubscribedCurrencies(List<JobSettings> jobs) throws JsonProcessingException {
@@ -226,6 +226,12 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 job.setFunds(value); // 0.96384
                 jobStatus.setCurrentFundsUsd(value);
                 jobStatus.setSize(0.0);
+
+                if (job.isActive() && job.getIncreaseFundsBy() > 0.0) {
+                    job.setStartingFundsUsd(job.getStartingFundsUsd() + job.getIncreaseFundsBy());
+                    job.setFunds(job.getFunds() + job.getIncreaseFundsBy());
+                    jobStatus.setStartingFundsUsd(job.getIncreaseFundsBy() + jobStatus.getStartingFundsUsd());
+                }
             }
 
             job.setPending(false);

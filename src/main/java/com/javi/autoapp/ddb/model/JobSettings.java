@@ -7,6 +7,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_YIELD_THRESH
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.EXPIRES;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.FUNDS;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INCREASE_FUNDS_BY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INIT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
@@ -82,6 +83,9 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = SIZE)
     private double size = 0.0;
+
+    @DynamoDBAttribute(attributeName = INCREASE_FUNDS_BY)
+    private double increaseFundsBy = 0.0;
 
     @DynamoDBAttribute(attributeName = ACTIVE)
     private boolean active = true;

@@ -70,6 +70,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
     public JobStatus updateJob(
             String jobID,
             Optional<Integer> precision,
+            Optional<Double> increaseFundsBy,
             Optional<Double> percentageYieldThreshold,
             Optional<Double> totalPercentageYieldThreshold,
             Optional<Double> floor,
@@ -87,6 +88,18 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             return null;
         }
 
+        JobStatus status = autoAppDao.getJobStatus(jobID);
+        increaseFundsBy.ifPresent(funds -> {
+            if (settings.isSell() || settings.isPending() || !settings.isActive()) {
+                settings.setIncreaseFundsBy(funds);
+            } else {
+                settings.setStartingFundsUsd(settings.getStartingFundsUsd() + funds);
+                settings.setFunds(settings.getFunds() + funds);
+                status.setStartingFundsUsd(funds + status.getStartingFundsUsd());
+                status.setCurrentFundsUsd(status.getCurrentFundsUsd() + funds);
+                status.setCurrentFundsUsd(status.getCurrentValueUsd() + funds);
+            }
+        });
         percentageYieldThreshold.ifPresent(settings::setPercentageYieldThreshold);
         precision.ifPresent(settings::setPrecision);
         totalPercentageYieldThreshold.ifPresent(settings::setTotalPercentageYieldThreshold);

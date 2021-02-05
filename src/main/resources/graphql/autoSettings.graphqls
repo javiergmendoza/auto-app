@@ -99,6 +99,8 @@ type Mutation {
         jobID: String!,
         # Default = 0 = round to nearest dollar. Example: -1 = round to tenths, 1 = round to tens
         precision: Int
+        # Add dollars for job to trade with
+        increaseFundsBy: Float,
         # Max yield for sell
         percentageYieldThreshold: Float,
         # Max yield for sell
