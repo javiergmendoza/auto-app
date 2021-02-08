@@ -41,7 +41,6 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 public class AutoTradingService implements Runnable, MessageHandler.Whole<CoinbaseTicker> {
-    private static final double BASE_PRECISION = 0.0; // Round to nearest dollar
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
     private static final double MINIMUM_FINAL_PERCENT_YIELD = 0.75;
@@ -219,19 +218,24 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 job.setSize(size); // 3.0
                 jobStatus.setCurrentFundsUsd(0.0);
                 jobStatus.setSize(size);
+                jobStatus.setCurrentValueUsd(value);
             }
             else {
                 job.setInit(false);
                 job.setSell(false);
                 job.setFunds(value); // 0.96384
-                jobStatus.setCurrentFundsUsd(value);
-                jobStatus.setSize(0.0);
 
                 if (job.isActive() && job.getIncreaseFundsBy() > 0.0) {
                     job.setStartingFundsUsd(job.getStartingFundsUsd() + job.getIncreaseFundsBy());
                     job.setFunds(job.getFunds() + job.getIncreaseFundsBy());
-                    jobStatus.setStartingFundsUsd(job.getIncreaseFundsBy() + jobStatus.getStartingFundsUsd());
+                    job.setIncreaseFundsBy(0.0);
+                    jobStatus.setStartingFundsUsd(job.getStartingFundsUsd());
                 }
+
+                // Update status
+                jobStatus.setCurrentFundsUsd(job.getFunds());
+                jobStatus.setSize(0.0);
+                jobStatus.setCurrentValueUsd(job.getFunds());
             }
 
             job.setPending(false);
@@ -245,7 +249,6 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
             } else {
                 jobStatus.setStatus(Status.RUNNING);
             }
-            jobStatus.setCurrentValueUsd(value);
             jobStatus.setPrice(value / size);
             jobStatus.setGainsLosses(value - jobStatus.getStartingFundsUsd());
             autoAppDao.updateJobStatus(jobStatus);
@@ -447,7 +450,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
     }
 
     private double roundPrice(double absolutePrice, double precision) {
-        double precisionPlace = Math.pow(10, BASE_PRECISION - precision);
+        double precisionPlace = Math.pow(10, -precision);
         return Math.round(absolutePrice * precisionPlace) / precisionPlace;
     }
 }
