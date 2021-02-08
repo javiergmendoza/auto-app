@@ -4,12 +4,14 @@ import com.javi.autoapp.config.AppConfig;
 import com.javi.autoapp.util.SignatureTool;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import java.util.Collections;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class CoinbaseTraderClient {
     private static final String RATE_LIMITER_NAME = "coinbaseClient";
@@ -52,7 +54,22 @@ public class CoinbaseTraderClient {
             String signature,
             String id) {
         return webClient.get()
-                .uri(appConfig.getCoinbaseApiUri() + "/client:{id}", id)
+                .uri(appConfig.getCoinbaseApiUri() + "/orders/client:{id}", id)
+                .headers(httpHeaders -> {
+                    httpHeaders.set(CB_ACCESS_SIGN, signature);
+                    httpHeaders.set(CB_ACCESS_TIMESTAMP, timestamp);
+                    httpHeaders.set(CB_ACCESS_PASSPHRASE, SignatureTool.PASSPHRASE);
+                    httpHeaders.set(CB_ACCESS_KEY, SignatureTool.KEY);
+                }).exchange();
+    }
+
+    @RateLimiter(name = RATE_LIMITER_NAME)
+    public Mono<ClientResponse> getDayTradeStatus(
+            String timestamp,
+            String signature,
+            String productId) {
+        return webClient.get()
+                .uri(appConfig.getCoinbaseApiUri() + "/products/{productId}/stats", productId)
                 .headers(httpHeaders -> {
                     httpHeaders.set(CB_ACCESS_SIGN, signature);
                     httpHeaders.set(CB_ACCESS_TIMESTAMP, timestamp);

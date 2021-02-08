@@ -5,6 +5,7 @@ import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobStatus;
 import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.service.AutoTradingService;
+import com.javi.autoapp.service.ProductsService;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class JobStatusQuery implements GraphQLQueryResolver {
-    private final AutoTradingService tradingService;
+    private final ProductsService productsService;
     private final AutoAppDao autoAppDao;
 
     public double getTotalGainsLosses() {
@@ -29,7 +30,7 @@ public class JobStatusQuery implements GraphQLQueryResolver {
     }
 
     public List<Currency> getActiveFeeds() {
-        return tradingService.getActiveFeeds().stream()
+        return productsService.getActiveFeeds().stream()
                 .map(Currency::getByLabel)
                 .collect(Collectors.toList());
     }

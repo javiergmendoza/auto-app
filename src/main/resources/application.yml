@@ -4,9 +4,9 @@ spring:
   main:
     log-startup-info: false
   cache:
-    cache-names: coinbaseClient
+    cache-names: coinbaseClient, coinbaseApi
     caffeine:
-      spec: maximumSize=500,expireAfterAccess=600s
+      spec: maximumSize=500,expireAfterWrite=6h
   port: 8080
   mvc:
     view:
@@ -28,4 +28,4 @@ resilience4j.ratelimiter:
       timeoutDuration: 1s
 
 coinbaseWebSocketUri: wss://ws-feed.pro.coinbase.com
-coinbaseApiUri: https://api.pro.coinbase.com/orders
+coinbaseApiUri: https://api.pro.coinbase.com

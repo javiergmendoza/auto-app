@@ -14,15 +14,23 @@ public class SignatureTool {
 
     private static final String POST_ORDER_REQUEST_PATH = "/orders";
     private static final String GET_ORDER_REQUEST_PATH = "/orders/client:{id}";
+    private static final String GET_STATS_REQUEST_PATH = "/products/{productId}/stats";
 
-    public static String getRequestPath() {
+    public static String getOrdersRequestPath() {
         return POST_ORDER_REQUEST_PATH;
     }
 
-    public static String getRequestPath(String id) {
+    public static String getOrdersRequestPath(String id) {
         return UriComponentsBuilder.newInstance()
                 .path(GET_ORDER_REQUEST_PATH)
                 .buildAndExpand(id)
+                .toUriString();
+    }
+
+    public static String getStatsRequestPath(String productId) {
+        return UriComponentsBuilder.newInstance()
+                .path(GET_STATS_REQUEST_PATH)
+                .buildAndExpand(productId)
                 .toUriString();
     }
 

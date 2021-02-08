@@ -5,12 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javi.autoapp.client.CoinbaseTraderClient;
 import com.javi.autoapp.client.model.CoinbaseOrderRequest;
 import com.javi.autoapp.client.model.CoinbaseOrderResponse;
-import com.javi.autoapp.client.model.CoinbaseWebSocketSubscribe;
-import com.javi.autoapp.client.model.CoinbaseTicker;
+import com.javi.autoapp.client.model.CoinbaseStatsResponse;
 import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobSettings;
 import com.javi.autoapp.ddb.model.JobStatus;
-import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.graphql.type.Status;
 import com.javi.autoapp.util.CacheHelper;
 import com.javi.autoapp.util.SignatureTool;
@@ -18,63 +16,36 @@ import io.netty.handler.codec.http.HttpMethod;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
-import javax.websocket.MessageHandler;
-import javax.websocket.Session;
-import lombok.SneakyThrows;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class AutoTradingService implements Runnable, MessageHandler.Whole<CoinbaseTicker> {
+@RequiredArgsConstructor
+public class AutoTradingService implements Runnable {
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
     private static final double MINIMUM_FINAL_PERCENT_YIELD = 0.75;
     private final ObjectMapper mapper = new ObjectMapper();
+
     private final CacheManager cacheManager;
-    private final Session userSession;
     private final CoinbaseTraderClient coinbaseTraderClient;
     private final AutoAppDao autoAppDao;
-    private final Set<String> activeFeeds;
-    private final Map<String, String> pricesMap;
+    private final ProductsService productsService;
 
     private ScheduledFuture<?> scheduledFuture;
     private boolean bustCache = true;
-
-    public AutoTradingService(
-            CacheManager cacheManager,
-            Session session,
-            CoinbaseTraderClient coinbaseTraderClient,
-            AutoAppDao autoAppDao
-    ) {
-        this.cacheManager = cacheManager;
-        this.coinbaseTraderClient = coinbaseTraderClient;
-        this.autoAppDao = autoAppDao;
-        this.activeFeeds = Collections.synchronizedSet(new HashSet<>());
-        activeFeeds.add(Currency.BTC.getLabel());
-        this.pricesMap = new ConcurrentHashMap<>();
-
-        userSession = session;
-        userSession.addMessageHandler(this);
-    }
-
-    public Set<String> getActiveFeeds() {
-        return activeFeeds;
-    }
 
     @PostConstruct
     public void postConstruct() {
@@ -82,16 +53,6 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         scheduledFuture = executor.scheduleAtFixedRate(this, 0, 30, TimeUnit.SECONDS);
     }
 
-    @Override
-    public void onMessage(CoinbaseTicker message) {
-        if (message.getProductId() == null || message.getPrice() == null) {
-            return;
-        }
-        activeFeeds.add(message.getProductId());
-        pricesMap.put(message.getProductId(), message.getPrice());
-    }
-
-    @SneakyThrows
     @Override
     public void run(){
         if (bustCache) {
@@ -106,8 +67,13 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
             log.info("Processing {} jobs.", jobs.size());
         }
 
+        Set<String> productIds = jobs.stream()
+                .filter(JobSettings::isActive)
+                .map(JobSettings::getProductId)
+                .collect(Collectors.toSet());
+
         try {
-            updateSubscribedCurrencies(jobs);
+            productsService.updateSubscribedCurrencies(productIds);
         } catch (JsonProcessingException error) {
             log.error("Failed to update subcription tickers. Error: {}", error.getMessage());
         }
@@ -116,42 +82,6 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         cleanupCompletedJobs(jobs);
         checkPendingOrders(jobs);
         autoTrade(jobs);
-    }
-
-    private void updateSubscribedCurrencies(List<JobSettings> jobs) throws JsonProcessingException {
-        // Get all product IDs for jobs
-        Set<String> productIds = jobs.stream()
-                .filter(JobSettings::isActive)
-                .map(JobSettings::getProductId)
-                .collect(Collectors.toSet());
-
-        if (productIds.equals(activeFeeds)) {
-            return; // Nothing to update
-        }
-
-        // Only unsubscribe if there is anything to unsubscribe to
-        if (!activeFeeds.isEmpty()) {
-            log.info("Clearing currency ticker feeds.");
-            CoinbaseWebSocketSubscribe unsubscribe = new CoinbaseWebSocketSubscribe();
-            unsubscribe.setType(CoinbaseWebSocketSubscribe.UNSUBSCRIBE);
-            unsubscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
-            unsubscribe.setProductIds(new ArrayList<>(activeFeeds));
-            userSession.getAsyncRemote().sendText(mapper.writeValueAsString(unsubscribe));
-        }
-
-        // Subscribe to required product IDs
-        if (!productIds.isEmpty()) {
-            log.info("Subscribing to the following currency feeds: {}", productIds.toString());
-            CoinbaseWebSocketSubscribe subscribe = new CoinbaseWebSocketSubscribe();
-            subscribe.setType(CoinbaseWebSocketSubscribe.SUBSCRIBE);
-            subscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
-            subscribe.setProductIds(new ArrayList<>(productIds));
-            userSession.getAsyncRemote().sendText(mapper.writeValueAsString(subscribe));
-        }
-
-        // Clear to prevent storing stale data
-        pricesMap.clear();
-        activeFeeds.clear();
     }
 
     private void deactivateCompletedJobs(List<JobSettings> jobs) {
@@ -177,7 +107,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 signature = SignatureTool.getSignature(
                         timestamp,
                         HttpMethod.GET.name(),
-                        SignatureTool.getRequestPath(job.getJobId())
+                        SignatureTool.getOrdersRequestPath(job.getJobId())
                 );
             } catch (Exception e) {
                 log.error("Exception occurred in order polling thread. Error: {}", e.getMessage());
@@ -263,12 +193,20 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
                 .filter(job -> !job.isPending())
                 .forEach(job -> {
                     // Check for latest stored price
-                    String priceString = pricesMap.get(job.getProductId());
-                    if (priceString == null) {
+                    Optional<String> priceString = productsService.getPrice(job.getProductId());
+                    if (!priceString.isPresent()) {
                         return;
                     }
-                    double absolutePrice = Double.parseDouble(priceString);
+                    double absolutePrice = Double.parseDouble(priceString.get());
                     double price = roundPrice(absolutePrice, job.getPrecision());
+
+                    CoinbaseStatsResponse stats = null;
+                    try {
+                        stats = productsService.getCurrencyStats(job.getProductId());
+                        log.info("24 hour stats: {}", mapper.writeValueAsString(stats));
+                    } catch (Exception e) {
+                        log.error("Unable to pull 24 hour stats for {}", job.getProductId());
+                    }
 
                     if (job.isInit()) {
                         try {
@@ -435,7 +373,7 @@ public class AutoTradingService implements Runnable, MessageHandler.Whole<Coinba
         String signature = SignatureTool.getSignature(
                 timestamp,
                 HttpMethod.POST.name(),
-                SignatureTool.getRequestPath(),
+                SignatureTool.getOrdersRequestPath(),
                 mapper.writeValueAsString(order)
         );
 
