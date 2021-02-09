@@ -11,7 +11,6 @@ public interface AutoAppDaoConstants {
     String PRECISION_FROM_CENT = "presc";
     String PERCENTAGE_YIELD_THRESHOLD = "maxyt";
     String TOTAL_PERCENTAGE_YIELD_THRESHOLD = "tmaxyt";
-    String FLOOR = "floor";
     String FUNDS = "fund";
     String EXPIRES = "exp";
     String STATUS = "stat";
@@ -19,15 +18,14 @@ public interface AutoAppDaoConstants {
     String CURRENT_VALUE_USD = "val";
     String CURRENT_FUNDS_USD = "cfd";
     String STARTING_FUNDS_USD = "sfd";
-    String MAX_PERCENTAGE_YIELD = "maxy";
-    String CROSSED_YIELD_THRESHOLD = "cyieldt";
+    String MAX_VALUE = "maxv";
+    String CROSSED_HIGH_THRESHOLD = "hight";
     String MIN_VALUE = "minv";
-    String CROSSED_FLOOR = "floort";
+    String CROSSED_LOW_THRESHOLD = "lowt";
     String SIZE = "size";
     String PRICE = "price";
     String ACTIVE = "actv";
     String PENDING = "pend";
     String SELL = "sell";
-    String INIT = "init";
     String INCREASE_FUNDS_BY = "incby";
 }

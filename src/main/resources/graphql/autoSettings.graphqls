@@ -85,8 +85,6 @@ type Mutation {
         percentageYieldThreshold: Float!,
         # Max yield for sell. Default = 10.0
         totalPercentageYieldThreshold: Float = 10.0,
-        # Floor threshoold to buy
-        floor: Float!,
         # Starting amount dollars to invest
         funds: Float!,
         # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
@@ -105,8 +103,6 @@ type Mutation {
         percentageYieldThreshold: Float,
         # Max yield for sell
         totalPercentageYieldThreshold: Float,
-        # Floor threshoold to buy
-        floor: Float,
         # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
         expires: String
     ):JobStatus

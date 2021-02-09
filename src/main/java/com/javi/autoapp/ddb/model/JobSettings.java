@@ -2,18 +2,16 @@ package com.javi.autoapp.ddb.model;
 
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ACTIVE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.AUTO_APP_TABLE_NAME;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_FLOOR;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_YIELD_THRESHOLD;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_HIGH_THRESHOLD;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_LOW_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.EXPIRES;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.FUNDS;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INCREASE_FUNDS_BY;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INIT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PERCENTAGE_YIELD_THRESHOLD;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_PERCENTAGE_YIELD;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.FLOOR;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PENDING;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRECISION_FROM_CENT;
@@ -57,9 +55,6 @@ public class JobSettings {
     @DynamoDBAttribute(attributeName = TOTAL_PERCENTAGE_YIELD_THRESHOLD)
     private double totalPercentageYieldThreshold = 10.0;
 
-    @DynamoDBAttribute(attributeName = FLOOR)
-    private double floor = 0.0;
-
     @DynamoDBAttribute(attributeName = FUNDS)
     private double funds = 0.0;
 
@@ -69,17 +64,17 @@ public class JobSettings {
     @DynamoDBAttribute(attributeName = EXPIRES)
     private String expires = "";
 
-    @DynamoDBAttribute(attributeName = MAX_PERCENTAGE_YIELD)
-    private double maxPercentageYield = 0.0;
+    @DynamoDBAttribute(attributeName = MAX_VALUE)
+    private double maxValue = 0.0;
 
-    @DynamoDBAttribute(attributeName = CROSSED_YIELD_THRESHOLD)
-    private boolean crossedYieldThreshold = false;
+    @DynamoDBAttribute(attributeName = CROSSED_HIGH_THRESHOLD)
+    private boolean crossedHighThreshold = false;
 
     @DynamoDBAttribute(attributeName = MIN_VALUE)
     private double minValue = 0.0;
 
-    @DynamoDBAttribute(attributeName = CROSSED_FLOOR)
-    private boolean crossedFloor = false;
+    @DynamoDBAttribute(attributeName = CROSSED_LOW_THRESHOLD)
+    private boolean crossedLowThreshold = false;
 
     @DynamoDBAttribute(attributeName = SIZE)
     private double size = 0.0;
@@ -92,7 +87,4 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = PENDING)
     private boolean pending = false;
-
-    @DynamoDBAttribute(attributeName = INIT)
-    private boolean init = true;
 }

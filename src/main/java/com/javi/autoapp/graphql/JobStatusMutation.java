@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class JobStatusMutation implements GraphQLMutationResolver {
-    private static final double MINIMUM_PERCENTAGE_YIELD = 1.02;
+    private static final double MINIMUM_PERCENTAGE_YIELD = 1.01;
     private final CacheManager cacheManager;
     private final AutoAppDao autoAppDao;
 
@@ -31,7 +31,6 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             int precision,
             double percentageYieldThreshold,
             double totalPercentageYieldThreshold,
-            double floor,
             double funds,
             String expires,
             DataFetchingEnvironment environment) {
@@ -43,10 +42,10 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         // Create init job settings
         JobSettings settings = new JobSettings();
         settings.setProductId(currency.getLabel());
+        settings.setSell(false);
         settings.setPrecision(precision);
         settings.setPercentageYieldThreshold(percentageYieldThreshold);
         settings.setTotalPercentageYieldThreshold(totalPercentageYieldThreshold);
-        settings.setFloor(floor);
         settings.setFunds(funds);
         settings.setStartingFundsUsd(funds);
         settings.setExpires(expires);
@@ -73,7 +72,6 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             Optional<Double> increaseFundsBy,
             Optional<Double> percentageYieldThreshold,
             Optional<Double> totalPercentageYieldThreshold,
-            Optional<Double> floor,
             Optional<String> expires,
             DataFetchingEnvironment environment) {
         // Job settings
@@ -103,7 +101,6 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         percentageYieldThreshold.ifPresent(settings::setPercentageYieldThreshold);
         precision.ifPresent(settings::setPrecision);
         totalPercentageYieldThreshold.ifPresent(settings::setTotalPercentageYieldThreshold);
-        floor.ifPresent(settings::setFloor);
         expires.ifPresent(settings::setExpires);
         autoAppDao.startOrUpdateJob(settings);
 

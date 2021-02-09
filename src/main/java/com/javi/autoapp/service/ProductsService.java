@@ -105,7 +105,7 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
     }
 
     @Cacheable
-    public CoinbaseStatsResponse getCurrencyStats(String productId)
+    public CoinbaseStatsResponse getProductStats(String productId)
             throws InvalidKeyException, NoSuchAlgorithmException {
         log.info("Cache miss. Pulling 24 hour stats for {}", productId);
         ClientResponse response = updateCurrencyStats(productId).block();
