@@ -39,7 +39,7 @@ public class CoinbaseTraderClient {
             String signature,
             String body) {
         return webClient.post()
-                .uri(appConfig.getCoinbaseApiUri())
+                .uri(appConfig.getCoinbaseApiUri() + "/orders")
                 .headers(httpHeaders -> {
                     httpHeaders.set(CB_ACCESS_SIGN, signature);
                     httpHeaders.set(CB_ACCESS_TIMESTAMP, timestamp);
