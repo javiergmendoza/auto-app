@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.graalvm.compiler.nodes.calc.IntegerDivRemNode.Op;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +34,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             double totalPercentageYieldThreshold,
             double funds,
             String expires,
+            boolean tradeNow,
             DataFetchingEnvironment environment) {
         if (percentageYieldThreshold < MINIMUM_PERCENTAGE_YIELD) {
             environment.getExecutionContext().addError(new GenericGraphQLError("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses."));
@@ -49,6 +51,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         settings.setFunds(funds);
         settings.setStartingFundsUsd(funds);
         settings.setExpires(expires);
+        settings.setTradeNow(tradeNow);
         autoAppDao.startOrUpdateJob(settings);
 
         // Create init job status
@@ -73,6 +76,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             Optional<Double> percentageYieldThreshold,
             Optional<Double> totalPercentageYieldThreshold,
             Optional<String> expires,
+            Optional<Boolean> tradeNow,
             DataFetchingEnvironment environment) {
         // Job settings
         JobSettings settings = autoAppDao.getJobSettings(jobID);
@@ -102,6 +106,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         precision.ifPresent(settings::setPrecision);
         totalPercentageYieldThreshold.ifPresent(settings::setTotalPercentageYieldThreshold);
         expires.ifPresent(settings::setExpires);
+        tradeNow.ifPresent(settings::setTradeNow);
         autoAppDao.startOrUpdateJob(settings);
 
         // Bust the cache

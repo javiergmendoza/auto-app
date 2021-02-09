@@ -170,6 +170,7 @@ public class AutoTradingService implements Runnable {
             job.setPending(false);
             job.setCrossedLowThreshold(false);
             job.setCrossedHighThreshold(false);
+            job.setTradeNow(false);
             autoAppDao.startOrUpdateJob(job);
 
             // Update job status
@@ -240,13 +241,15 @@ public class AutoTradingService implements Runnable {
                 price,
                 priceWanted);
 
-        if (job.isCrossedLowThreshold() && price > job.getMinValue()) {
+        if ((job.isCrossedLowThreshold() && price > job.getMinValue()) || job.isTradeNow()) {
             double expectedBuy = job.getFunds() / price;
             double expectedFees = expectedBuy * COINBASE_PERCENTAGE;
             double expectedSize = expectedBuy - expectedFees;
             double percentYield = expectedSize / job.getSize();
 
-            if (percentYield < 1.0) {
+            if (percentYield < 1.0 && job.isTradeNow()) {
+                log.warn("WARNING!!! This sale is going to cost more than would gain. Net loss percentage will be: {}", percentYield);
+            } else if (percentYield < 1.0) {
                 log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
                 return;
             } else if (percentYield < WARNING_DELTA) {
@@ -302,13 +305,15 @@ public class AutoTradingService implements Runnable {
                 price,
                 priceWanted);
 
-        if (job.isCrossedHighThreshold() && price < job.getMaxValue()) {
+        if (job.isCrossedHighThreshold() && price < job.getMaxValue() || job.isTradeNow()) {
             double expectedSale = price * job.getSize();
             double expectedFees = expectedSale * COINBASE_PERCENTAGE;
             double expectedFunds = expectedSale - expectedFees;
             double percentYield = expectedFunds / job.getFunds();
 
-            if (percentYield < 1.0) {
+            if (percentYield < 1.0 && job.isTradeNow()) {
+                log.warn("WARNING!!! This sale is going to cost more than would gain. Net loss percentage will be: {}", percentYield);
+            }else if (percentYield < 1.0) {
                 log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
                 return;
             } else if (percentYield < WARNING_DELTA) {

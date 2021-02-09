@@ -20,6 +20,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SELL;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SIZE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.STARTING_FUNDS_USD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.TOTAL_PERCENTAGE_YIELD_THRESHOLD;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.TRADE_NOW;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -87,4 +88,7 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = PENDING)
     private boolean pending = false;
+
+    @DynamoDBAttribute(attributeName = TRADE_NOW)
+    private boolean tradeNow = false;
 }
