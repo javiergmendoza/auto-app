@@ -97,6 +97,12 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
             subscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
             subscribe.setProductIds(new ArrayList<>(productIds));
             userSession.getAsyncRemote().sendText(mapper.writeValueAsString(subscribe));
+        } else {
+            CoinbaseWebSocketSubscribe subscribe = new CoinbaseWebSocketSubscribe();
+            subscribe.setType(CoinbaseWebSocketSubscribe.SUBSCRIBE);
+            subscribe.setChannels(CoinbaseWebSocketSubscribe.TICKER_CHANNEL);
+            subscribe.setProductIds(Collections.singletonList(Currency.BTC.getLabel()));
+            userSession.getAsyncRemote().sendText(mapper.writeValueAsString(subscribe));
         }
 
         // Clear to prevent storing stale data
