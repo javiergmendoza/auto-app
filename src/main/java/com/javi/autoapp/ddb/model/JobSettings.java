@@ -2,7 +2,6 @@ package com.javi.autoapp.ddb.model;
 
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ACTIVE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.AUTO_APP_TABLE_NAME;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_HIGH_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_LOW_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_YIELD_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.EXPIRES;
@@ -12,7 +11,6 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INCREASE_FUNDS_BY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INIT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_YIELD_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ORDER_ID;
@@ -71,12 +69,6 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = EXPIRES)
     private String expires = "";
-
-    @DynamoDBAttribute(attributeName = MAX_VALUE)
-    private double maxValue = 0.0;
-
-    @DynamoDBAttribute(attributeName = CROSSED_HIGH_THRESHOLD)
-    private boolean crossedHighThreshold = false;
 
     @DynamoDBAttribute(attributeName = MIN_VALUE)
     private double minValue = 0.0;

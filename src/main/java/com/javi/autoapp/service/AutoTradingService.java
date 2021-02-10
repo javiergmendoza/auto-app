@@ -179,7 +179,6 @@ public class AutoTradingService implements Runnable {
             job.setInit(false);
             job.setPending(false);
             job.setCrossedLowThreshold(false);
-            job.setCrossedHighThreshold(false);
             job.setCrossedPercentageYieldThreshold(false);
             job.setMaxYieldValue(0.0);
             job.setTradeNow(false);
@@ -348,7 +347,7 @@ public class AutoTradingService implements Runnable {
 
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
                 || job.isTradeNow()) {
-            if (!job.isCrossedLowThreshold() && !job.isTradeNow()) {
+            if (price > midPrice && !job.isTradeNow()) {
                 log.warn("WARNING!!! This trade will buy product {} above 24 hour mid market value of {}. Must force trade to proceed.",
                         job.getProductId(),
                         midPrice);
@@ -401,20 +400,6 @@ public class AutoTradingService implements Runnable {
             autoAppDao.startOrUpdateJob(job);
             bustCache = true;
         }
-
-        if (!job.isCrossedLowThreshold() && price < midPrice) {
-            log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
-            job.setCrossedLowThreshold(true);
-            job.setMinValue(price);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-        }
-
-        if (job.isCrossedLowThreshold() && price < job.getMinValue()) {
-            job.setMinValue(price);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-        }
     }
 
     private void crest(JobSettings job, double price)
@@ -461,7 +446,7 @@ public class AutoTradingService implements Runnable {
 
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
                 || job.isTradeNow()) {
-            if (!job.isCrossedHighThreshold() && !job.isTradeNow()) {
+            if (price < midPrice && !job.isTradeNow()) {
                 log.warn("WARNING!!! This trade will sell product {} above 24 hour mid market value of {}. Must force trade to proceed.",
                         job.getProductId(),
                         midPrice);
@@ -511,19 +496,6 @@ public class AutoTradingService implements Runnable {
 
         if (job.isCrossedPercentageYieldThreshold() && percentYield > job.getMaxYieldValue()) {
             job.setMaxYieldValue(percentYield);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-        }
-
-        if (!job.isCrossedHighThreshold() && price > midPrice) {
-            log.info("Job ID: {} - Crossed {} above high threshold.", job.getJobId(), job.getProductId());
-            job.setCrossedHighThreshold(true);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-        }
-
-        if (job.isCrossedHighThreshold() && price > job.getMaxValue()) {
-            job.setMaxValue(price);
             autoAppDao.startOrUpdateJob(job);
             bustCache = true;
         }

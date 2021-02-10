@@ -19,7 +19,6 @@ public interface AutoAppDaoConstants {
     String CURRENT_VALUE_USD = "val";
     String CURRENT_FUNDS_USD = "cfd";
     String STARTING_FUNDS_USD = "sfd";
-    String CROSSED_HIGH_THRESHOLD = "hight";
     String CROSSED_LOW_THRESHOLD = "lowt";
     String SIZE = "size";
     String PRICE = "price";
@@ -32,5 +31,4 @@ public interface AutoAppDaoConstants {
     String CROSSED_YIELD_THRESHOLD = "crssdyt";
     String INIT = "init";
     String MIN_VALUE = "minv";
-    String MAX_VALUE = "maxv";
 }
