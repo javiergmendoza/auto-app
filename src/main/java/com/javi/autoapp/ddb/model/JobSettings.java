@@ -4,15 +4,18 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ACTIVE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.AUTO_APP_TABLE_NAME;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_HIGH_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_LOW_THRESHOLD;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.CROSSED_YIELD_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.EXPIRES;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.FUNDS;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INCREASE_FUNDS_BY;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INIT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_VALUE;
-import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PERCENTAGE_YIELD_THRESHOLD;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_YIELD_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PERCENTAGE_YIELD_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PENDING;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRECISION_FROM_CENT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRODUCT_ID;
@@ -77,6 +80,12 @@ public class JobSettings {
     @DynamoDBAttribute(attributeName = CROSSED_LOW_THRESHOLD)
     private boolean crossedLowThreshold = false;
 
+    @DynamoDBAttribute(attributeName = MAX_YIELD_VALUE)
+    private double maxYieldValue = 0.0;
+
+    @DynamoDBAttribute(attributeName = CROSSED_YIELD_THRESHOLD)
+    private boolean crossedPercentageYieldThreshold = false;
+
     @DynamoDBAttribute(attributeName = SIZE)
     private double size = 0.0;
 
@@ -91,4 +100,7 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = TRADE_NOW)
     private boolean tradeNow = false;
+
+    @DynamoDBAttribute(attributeName = INIT)
+    private boolean init = true;
 }

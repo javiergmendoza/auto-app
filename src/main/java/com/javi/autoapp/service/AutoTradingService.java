@@ -34,10 +34,9 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
-    private static final double WINDOW_BUFFER = 1.02;
+    private static final double WINDOW_BUFFER = 1.01;
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
-    private static final double MINIMUM_FINAL_PERCENT_YIELD = 0.75;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final CacheManager cacheManager;
@@ -139,8 +138,15 @@ public class AutoTradingService implements Runnable {
             CoinbaseOrderResponse response,
             JobSettings job) throws JsonProcessingException {
         if (response.isSettled()) {
-            double value = Double.parseDouble(response.getExecutedValue());
-            double size = Double.parseDouble(response.getFilledSize());
+            double value;
+            double size;
+            try {
+                value = Double.parseDouble(response.getExecutedValue());
+                size = Double.parseDouble(response.getFilledSize());
+            } catch (Exception e) {
+                log.error("Exception occurred trying to parse trade response. Error: {}", e.getMessage());
+                return;
+            }
 
             JobStatus jobStatus = autoAppDao.getJobStatus(job.getJobId());
             if (!job.isSell()) {
@@ -167,9 +173,12 @@ public class AutoTradingService implements Runnable {
                 jobStatus.setCurrentValueUsd(job.getFunds());
             }
 
+            job.setInit(false);
             job.setPending(false);
             job.setCrossedLowThreshold(false);
             job.setCrossedHighThreshold(false);
+            job.setCrossedPercentageYieldThreshold(false);
+            job.setMaxYieldValue(0.0);
             job.setTradeNow(false);
             autoAppDao.startOrUpdateJob(job);
 
@@ -197,10 +206,23 @@ public class AutoTradingService implements Runnable {
                     if (!priceString.isPresent()) {
                         return;
                     }
-                    double absolutePrice = Double.parseDouble(priceString.get());
+
+                    double absolutePrice;
+                    try {
+                        absolutePrice = Double.parseDouble(priceString.get());
+                    } catch (Exception e) {
+                        log.error("Exception occurred trying to parse price for {}. Error: {}", job.getProductId(), e.getMessage());
+                        return;
+                    }
                     double price = roundPrice(absolutePrice, job.getPrecision());
 
-                    if (job.isSell()) {
+                    if (job.isInit()) {
+                        try {
+                            init(job, price);
+                        } catch (Exception e) {
+                            log.error("Failed to handle init period. Exception: {}", e.getMessage());
+                        }
+                    } else if (job.isSell()) {
                         try {
                             crest(job, price);
                         } catch (Exception e) {
@@ -214,6 +236,55 @@ public class AutoTradingService implements Runnable {
                         }
                     }
                 });
+    }
+
+    private void init(JobSettings job, double price)
+            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
+        CoinbaseStatsResponse stats = productsService.getProductStats(job.getProductId());
+        if (stats == null) {
+            log.error("Stats for {} are null.", job.getProductId());
+            return;
+        }
+
+        double midPrice;
+        try {
+            midPrice = roundPrice(Double.parseDouble(stats.getOpen()), job.getPrecision());
+        } catch (Exception e) {
+            log.error("Exception parsing stats occurred. Error: {}", e.getMessage());
+            return;
+        }
+
+        log.info("Checking pending jobId: {} - ProductId: {}, CurrentPrice: {}, MidPrice: {}",
+                job.getJobId(),
+                job.getProductId(),
+                price,
+                midPrice);
+
+        if ((job.isCrossedLowThreshold() && price > job.getMinValue())
+                || job.isTradeNow()) {
+
+            // Update job to hold until sell is complete
+            job.setPending(true);
+            autoAppDao.startOrUpdateJob(job);
+            bustCache = true;
+
+            // Send trade request
+            CoinbaseOrderRequest request = new CoinbaseOrderRequest();
+            request.setJobId(job.getJobId());
+            request.setSide(CoinbaseOrderRequest.BUY);
+            request.setFunds(String.valueOf(job.getFunds()));
+            request.setProductId(job.getProductId());
+            trade(request);
+            return;
+        }
+
+        if (price < midPrice) {
+            log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
+            job.setCrossedLowThreshold(true);
+            job.setMinValue(price);
+            autoAppDao.startOrUpdateJob(job);
+            bustCache = true;
+        }
     }
 
     private void trough(JobSettings job, double price)
@@ -272,7 +343,7 @@ public class AutoTradingService implements Runnable {
         }
 
         // Set top value
-        if (price < priceWanted) {
+        if (price < midPrice) {
             log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
             job.setCrossedLowThreshold(true);
             job.setMinValue(price);
@@ -284,12 +355,27 @@ public class AutoTradingService implements Runnable {
     private void crest(JobSettings job, double price)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         CoinbaseStatsResponse stats = productsService.getProductStats(job.getProductId());
-        double absolutePriceWanted = Double.parseDouble(stats.getOpen()) * job.getPercentageYieldThreshold();
-        double priceWanted = roundPrice(absolutePriceWanted, job.getPrecision());
-        double absoluteMaxPrice = Double.parseDouble(stats.getHigh()) / WINDOW_BUFFER;
-        double maxPrice = roundPrice(absoluteMaxPrice, job.getPrecision());
-        double absoluteMidPrice = Double.parseDouble(stats.getOpen());
-        double midPrice = roundPrice(absoluteMidPrice, job.getPrecision());
+        if (stats == null) {
+            log.error("Stats for {} are null.", job.getProductId());
+            return;
+        }
+
+        double maxPrice;
+        double midPrice;
+        try {
+            maxPrice = roundPrice(Double.parseDouble(stats.getHigh()), job.getPrecision());
+            midPrice = roundPrice(Double.parseDouble(stats.getOpen()), job.getPrecision());
+        } catch (Exception e) {
+            log.error("Exception parsing stats occurred. Error: {}", e.getMessage());
+            return;
+        }
+
+        double expectedSale = price * job.getSize();
+        double expectedFees = expectedSale * COINBASE_PERCENTAGE;
+        double expectedFunds = expectedSale - expectedFees;
+        double percentYield = expectedFunds / job.getFunds();
+        double priceWantedAbsolute = (job.getPercentageYieldThreshold() * job.getFunds()) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
+        double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
 
         if (priceWanted > maxPrice) {
             log.warn("Looking for price of {} which is above the 24 hour high of {}. Current mid price is: {}. Current price is: {}",
@@ -305,13 +391,14 @@ public class AutoTradingService implements Runnable {
                 price,
                 priceWanted);
 
-        if (job.isCrossedHighThreshold() && price < job.getMaxValue() || job.isTradeNow()) {
-            double expectedSale = price * job.getSize();
-            double expectedFees = expectedSale * COINBASE_PERCENTAGE;
-            double expectedFunds = expectedSale - expectedFees;
-            double percentYield = expectedFunds / job.getFunds();
-
-            if (percentYield < 1.0 && job.isTradeNow()) {
+        if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
+                || job.isTradeNow()) {
+            if (!job.isCrossedLowThreshold() && !job.isTradeNow()) {
+                log.warn("WARNING!!! This trade will buy product {} above 24 hour mid market value of {}. Must force trade to proceed.",
+                        job.getProductId(),
+                        midPrice);
+                return;
+            } else if (percentYield < 1.0 && job.isTradeNow()) {
                 log.warn("WARNING!!! This sale is going to cost more than would gain. Net loss percentage will be: {}", percentYield);
             }else if (percentYield < 1.0) {
                 log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
@@ -335,11 +422,21 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        // Set top value
-        if (price > priceWanted) {
+        if (percentYield > job.getPercentageYieldThreshold()) {
+            log.info("Job ID: {} - Crossed {} yield threshold of {}",
+                    job.getJobId(),
+                    job.getProductId(),
+                    job.getPercentageYieldThreshold()
+            );
+            job.setCrossedPercentageYieldThreshold(true);
+            job.setMaxYieldValue(percentYield);
+            autoAppDao.startOrUpdateJob(job);
+            bustCache = true;
+        }
+
+        if (price > midPrice) {
             log.info("Job ID: {} - Crossed {} above high threshold.", job.getJobId(), job.getProductId());
             job.setCrossedHighThreshold(true);
-            job.setMaxValue(price);
             autoAppDao.startOrUpdateJob(job);
             bustCache = true;
         }
