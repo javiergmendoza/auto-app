@@ -109,7 +109,7 @@ public class AutoTradingService implements Runnable {
                 signature = SignatureTool.getSignature(
                         timestamp,
                         HttpMethod.GET.name(),
-                        SignatureTool.getOrdersRequestPath(job.getJobId())
+                        SignatureTool.getOrdersRequestPath(job.getOrderId())
                 );
             } catch (Exception e) {
                 log.error("Exception occurred in order polling thread. Error: {}", e.getMessage());
