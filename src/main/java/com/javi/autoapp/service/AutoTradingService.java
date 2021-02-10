@@ -327,9 +327,11 @@ public class AutoTradingService implements Runnable {
                     price);
         }
 
-        log.info("Checking trough jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}",
+        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}",
                 job.getJobId(),
                 job.getProductId(),
+                percentYield,
+                job.getPercentageYieldThreshold(),
                 price,
                 priceWanted);
 
@@ -430,9 +432,11 @@ public class AutoTradingService implements Runnable {
                     price);
         }
 
-        log.info("Checking crest jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}",
+        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}",
                 job.getJobId(),
                 job.getProductId(),
+                percentYield,
+                job.getPercentageYieldThreshold(),
                 price,
                 priceWanted);
 
