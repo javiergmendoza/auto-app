@@ -477,7 +477,7 @@ public class AutoTradingService implements Runnable {
             CoinbaseOrderRequest request = new CoinbaseOrderRequest();
             request.setOrderId(job.getOrderId());
             request.setSide(CoinbaseOrderRequest.SELL);
-            request.setSide(String.valueOf(job.getSize()));
+            request.setSize(String.valueOf(job.getSize()));
             request.setProductId(job.getProductId());
             boolean success = trade(request);
 
