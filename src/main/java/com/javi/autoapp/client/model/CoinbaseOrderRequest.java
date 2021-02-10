@@ -14,7 +14,7 @@ public class CoinbaseOrderRequest {
     private final String type = "market";
 
     @JsonProperty("client_oid")
-    private String jobId;
+    private String orderId;
 
     private String side;
     private String funds;

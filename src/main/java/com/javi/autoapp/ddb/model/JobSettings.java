@@ -15,6 +15,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_YIELD_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ORDER_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PERCENTAGE_YIELD_THRESHOLD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PENDING;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRECISION_FROM_CENT;
@@ -43,6 +44,9 @@ public class JobSettings {
 
     @DynamoDBRangeKey(attributeName = JOB_ID)
     private String jobId = UUID.randomUUID().toString();
+
+    @DynamoDBAttribute(attributeName = ORDER_ID)
+    private String orderId = UUID.randomUUID().toString();
 
     @DynamoDBAttribute(attributeName = PRODUCT_ID)
     private String productId = "";

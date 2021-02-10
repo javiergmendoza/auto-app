@@ -6,6 +6,7 @@ public interface AutoAppDaoConstants {
     String JOB_STATUS_ID = "JOB_STATUS";
     String HASH_KEY = "id";
     String JOB_ID = "jid";
+    String ORDER_ID = "oid";
     String CURRENCY = "cur";
     String PRODUCT_ID = "pid";
     String PRECISION_FROM_CENT = "presc";

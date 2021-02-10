@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -29,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.ClientResponse;
 
 @Slf4j
 @Service
@@ -173,6 +175,7 @@ public class AutoTradingService implements Runnable {
                 jobStatus.setCurrentValueUsd(job.getFunds());
             }
 
+            job.setOrderId(UUID.randomUUID().toString());
             job.setInit(false);
             job.setPending(false);
             job.setCrossedLowThreshold(false);
@@ -263,18 +266,25 @@ public class AutoTradingService implements Runnable {
         if ((job.isCrossedLowThreshold() && price > job.getMinValue())
                 || job.isTradeNow()) {
 
-            // Update job to hold until sell is complete
-            job.setPending(true);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-
             // Send trade request
             CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-            request.setJobId(job.getJobId());
+            request.setOrderId(job.getOrderId());
             request.setSide(CoinbaseOrderRequest.BUY);
             request.setFunds(String.valueOf(job.getFunds()));
             request.setProductId(job.getProductId());
-            trade(request);
+            boolean success = trade(request);
+
+            // Update job to hold until sell is complete
+            if (success) {
+                job.setPending(true);
+                autoAppDao.startOrUpdateJob(job);
+                bustCache = true;
+            } else {
+                job.setOrderId(UUID.randomUUID().toString());
+                autoAppDao.startOrUpdateJob(job);
+                bustCache = true;
+            }
+
             return;
         }
 
@@ -351,18 +361,25 @@ public class AutoTradingService implements Runnable {
                 log.warn("WARNING!!! This sale is below the {}% gain warning threshold. Net gain percent will be: {}%", WARNING_DELTA * 100, percentYield * 100);
             }
 
-            // Update job to hold until sell is complete
-            job.setPending(true);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-
             // Send trade request
             CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-            request.setJobId(job.getJobId());
+            request.setOrderId(job.getOrderId());
             request.setSide(CoinbaseOrderRequest.BUY);
             request.setFunds(String.valueOf(job.getFunds()));
             request.setProductId(job.getProductId());
-            trade(request);
+            boolean success = trade(request);
+
+            // Update job to hold until sell is complete
+            if (success) {
+                job.setPending(true);
+                autoAppDao.startOrUpdateJob(job);
+                bustCache = true;
+            } else {
+                job.setOrderId(UUID.randomUUID().toString());
+                autoAppDao.startOrUpdateJob(job);
+                bustCache = true;
+            }
+
             return;
         }
 
@@ -456,18 +473,25 @@ public class AutoTradingService implements Runnable {
                 log.warn("WARNING!!! This sale is below the {}% gain warning threshold. Net gain percent will be: {}%", WARNING_DELTA * 100, percentYield * 100);
             }
 
-            // Update job to hold until sell is complete
-            job.setPending(true);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-
             // Send trade request
             CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-            request.setJobId(job.getJobId());
+            request.setOrderId(job.getOrderId());
             request.setSide(CoinbaseOrderRequest.SELL);
             request.setSide(String.valueOf(job.getSize()));
             request.setProductId(job.getProductId());
-            trade(request);
+            boolean success = trade(request);
+
+            // Update job to hold until sell is complete
+            if (success) {
+                job.setPending(true);
+                autoAppDao.startOrUpdateJob(job);
+                bustCache = true;
+            } else {
+                job.setOrderId(UUID.randomUUID().toString());
+                autoAppDao.startOrUpdateJob(job);
+                bustCache = true;
+            }
+
             return;
         }
 
@@ -514,7 +538,7 @@ public class AutoTradingService implements Runnable {
                 });
     }
 
-    private void trade(CoinbaseOrderRequest order)
+    private boolean trade(CoinbaseOrderRequest order)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String signature = SignatureTool.getSignature(
@@ -526,12 +550,16 @@ public class AutoTradingService implements Runnable {
 
         log.info("Sending trade request: {}", mapper.writeValueAsString(order));
 
-        coinbaseTraderClient.trade(timestamp, signature, mapper.writeValueAsString(order)).subscribe(resp -> {
-            if (resp.statusCode().isError()) {
-                log.error("Failed to place order.");
-                resp.bodyToMono(String.class).subscribe(error -> log.error("Failed to place order. Error: {}", error));
-            }
-        });
+
+        ClientResponse response = coinbaseTraderClient.trade(timestamp, signature, mapper.writeValueAsString(order)).block();
+
+        if (response.statusCode().isError()) {
+            log.error("Failed to place order.");
+            response.bodyToMono(String.class).subscribe(error -> log.error("Failed to place order. Error: {}", error));
+            return false;
+        }
+
+        return true;
     }
 
     private double roundPrice(double absolutePrice, double precision) {
