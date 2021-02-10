@@ -337,13 +337,14 @@ public class AutoTradingService implements Runnable {
                     price);
         }
 
-        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}",
+        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
                 job.getPercentageYieldThreshold(),
                 price,
-                priceWanted);
+                priceWanted,
+                midPrice);
 
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
                 || job.isTradeNow()) {
@@ -449,13 +450,14 @@ public class AutoTradingService implements Runnable {
                     price);
         }
 
-        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}",
+        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
                 job.getPercentageYieldThreshold(),
                 price,
-                priceWanted);
+                priceWanted,
+                midPrice);
 
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
                 || job.isTradeNow()) {
