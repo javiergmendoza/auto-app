@@ -118,7 +118,7 @@ public class AutoTradingService implements Runnable {
             coinbaseTraderClient.getOrderStatus(
                     timestamp,
                     signature,
-                    job.getJobId()
+                    job.getOrderId()
             ).subscribe(resp -> {
                 if (resp.statusCode().isError()) {
                     resp.bodyToMono(String.class).subscribe(error -> log.error("Failed to get order status. Error: {}", error));
