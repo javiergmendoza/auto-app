@@ -249,10 +249,11 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        log.info("Checking pending jobId: {} - ProductId: {}, CurrentPrice: {}, MidPrice: {}",
+        log.info("Checking pending jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 price,
+                (midPrice / WINDOW_BUFFER),
                 midPrice);
 
         if ((job.isCrossedLowThreshold() && price > job.getMinValue())
