@@ -4,9 +4,9 @@ spring:
   main:
     log-startup-info: false
   cache:
-    cache-names: coinbaseClient, coinbaseApi
+    cache-names: coinbaseClient
     caffeine:
-      spec: maximumSize=500,expireAfterWrite=5m
+      spec: maximumSize=500,expireAfterWrite=6h
   port: 8080
   mvc:
     view:

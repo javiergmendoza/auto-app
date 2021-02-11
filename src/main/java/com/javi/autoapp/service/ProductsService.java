@@ -22,18 +22,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
-@CacheConfig(cacheNames = {"coinbaseApi"})
 public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -110,10 +106,8 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
         activeFeeds.clear();
     }
 
-    @Cacheable
     public CoinbaseStatsResponse getProductStats(String productId)
             throws InvalidKeyException, NoSuchAlgorithmException {
-        log.info("Cache miss. Pulling 24 hour stats for {}", productId);
         ClientResponse response = updateCurrencyStats(productId).block();
         if (response.statusCode().isError()) {
             response.bodyToMono(String.class).subscribe(error -> log.error("Failed to get order status. Error: {}", error));

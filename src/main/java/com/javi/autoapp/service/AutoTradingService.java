@@ -302,16 +302,6 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        double maxPrice;
-        double midPrice;
-        try {
-            maxPrice = roundPrice(Double.parseDouble(stats.getHigh()), job.getPrecision());
-            midPrice = roundPrice(Double.parseDouble(stats.getOpen()), job.getPrecision());
-        } catch (Exception e) {
-            log.error("Exception parsing stats occurred. Error: {}", e.getMessage());
-            return;
-        }
-
         double expectedSale = price * job.getSize();
         double expectedFees = expectedSale * COINBASE_PERCENTAGE;
         double expectedFunds = expectedSale - expectedFees;
@@ -320,31 +310,17 @@ public class AutoTradingService implements Runnable {
         double priceWantedAbsolute = ((job.getPercentageYieldThreshold() * job.getFunds()) / COINBASE_PERCENTAGE) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
         double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
 
-        if (priceWanted > maxPrice) {
-            log.warn("Looking for price of {} which is above the 24 hour high of {}. Current mid price is: {}. Current price is: {}",
-                    priceWanted,
-                    maxPrice,
-                    midPrice,
-                    price);
-        }
-
-        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
+        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
                 job.getPercentageYieldThreshold(),
                 price,
-                priceWanted,
-                midPrice);
+                priceWanted);
 
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
                 || job.isTradeNow()) {
-            if (price < midPrice && !job.isTradeNow()) {
-                log.warn("WARNING!!! This trade will sell product {} above 24 hour mid market value of {}. Must force trade to proceed.",
-                        job.getProductId(),
-                        midPrice);
-                return;
-            } else if (percentYield < 1.0 && job.isTradeNow()) {
+            if (percentYield < 1.0 && job.isTradeNow()) {
                 log.warn("WARNING!!! This sale is going to cost more than would gain. Net loss percentage will be: {}", percentYield);
             }else if (percentYield < 1.0) {
                 log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
