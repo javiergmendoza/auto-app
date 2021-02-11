@@ -36,8 +36,8 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 @Service
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
-    private static final double COINBASE_PERCENTAGE = 0.0149;
-    private static final double WARNING_DELTA = 1.1;
+    private static final double COINBASE_PERCENTAGE = 0.0298;
+    private static final double WARNING_DELTA = 1.02;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final CacheManager cacheManager;
@@ -305,9 +305,8 @@ public class AutoTradingService implements Runnable {
         double expectedSale = price * job.getSize();
         double expectedFees = expectedSale * COINBASE_PERCENTAGE;
         double expectedFunds = expectedSale - expectedFees;
-        double expectedBuyFunds = expectedFunds * COINBASE_PERCENTAGE;
-        double percentYield = expectedBuyFunds / job.getFunds();
-        double priceWantedAbsolute = ((job.getPercentageYieldThreshold() * job.getFunds()) / COINBASE_PERCENTAGE) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
+        double percentYield = expectedFunds / job.getFunds();
+        double priceWantedAbsolute = (job.getPercentageYieldThreshold() * job.getFunds()) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
         double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
 
         log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}",

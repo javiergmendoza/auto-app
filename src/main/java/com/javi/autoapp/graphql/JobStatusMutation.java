@@ -98,6 +98,7 @@ public class JobStatusMutation implements GraphQLMutationResolver {
                 status.setStartingFundsUsd(settings.getStartingFundsUsd());
                 status.setCurrentFundsUsd(settings.getFunds());
                 status.setCurrentValueUsd(settings.getFunds());
+                autoAppDao.updateJobStatus(status);
             } else {
                 settings.setIncreaseFundsBy(settings.getIncreaseFundsBy() + funds);
             }
