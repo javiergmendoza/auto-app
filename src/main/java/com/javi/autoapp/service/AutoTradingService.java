@@ -36,7 +36,6 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 @Service
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
-    private static final double WINDOW_BUFFER = 1.02;
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -249,13 +248,10 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        double absolutePriceWanted = midPrice / WINDOW_BUFFER;
-        double priceWanted = roundPrice(absolutePriceWanted, job.getPrecision());
-        log.info("Checking trough jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
+        log.info("Checking trough jobId: {} - ProductId: {}, CurrentPrice: {}, MidPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 price,
-                priceWanted,
                 midPrice);
 
         if ((job.isCrossedLowThreshold() && price > job.getMinValue())
@@ -283,7 +279,7 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        if (!job.isCrossedLowThreshold() && price < priceWanted) {
+        if (!job.isCrossedLowThreshold() && price < midPrice) {
             log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
             job.setCrossedLowThreshold(true);
             job.setMinValue(price);
