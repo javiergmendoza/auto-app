@@ -29,6 +29,5 @@ public interface AutoAppDaoConstants {
     String TRADE_NOW = "traden";
     String MAX_YIELD_VALUE = "maxyv";
     String CROSSED_YIELD_THRESHOLD = "crssdyt";
-    String INIT = "init";
     String MIN_VALUE = "minv";
 }

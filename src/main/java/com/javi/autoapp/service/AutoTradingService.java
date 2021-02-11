@@ -36,7 +36,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 @Service
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
-    private static final double WINDOW_BUFFER = 1.01;
+    private static final double WINDOW_BUFFER = 1.02;
     private static final double COINBASE_PERCENTAGE = 0.0149;
     private static final double WARNING_DELTA = 1.1;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -176,7 +176,6 @@ public class AutoTradingService implements Runnable {
             }
 
             job.setOrderId(UUID.randomUUID().toString());
-            job.setInit(false);
             job.setPending(false);
             job.setCrossedLowThreshold(false);
             job.setCrossedPercentageYieldThreshold(false);
@@ -218,13 +217,7 @@ public class AutoTradingService implements Runnable {
                     }
                     double price = roundPrice(absolutePrice, job.getPrecision());
 
-                    if (job.isInit()) {
-                        try {
-                            init(job, price);
-                        } catch (Exception e) {
-                            log.error("Failed to handle init period. Exception: {}", e.getMessage());
-                        }
-                    } else if (job.isSell()) {
+                    if (job.isSell()) {
                         try {
                             crest(job, price);
                         } catch (Exception e) {
@@ -240,7 +233,7 @@ public class AutoTradingService implements Runnable {
                 });
     }
 
-    private void init(JobSettings job, double price)
+    private void trough(JobSettings job, double price)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         CoinbaseStatsResponse stats = productsService.getProductStats(job.getProductId());
         if (stats == null) {
@@ -287,7 +280,7 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        if (!job.isCrossedLowThreshold() && price < midPrice) {
+        if (!job.isCrossedLowThreshold() && price < (midPrice / WINDOW_BUFFER)) {
             log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
             job.setCrossedLowThreshold(true);
             job.setMinValue(price);
@@ -297,106 +290,6 @@ public class AutoTradingService implements Runnable {
 
         if (job.isCrossedLowThreshold() && price < job.getMinValue()) {
             job.setMinValue(price);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-        }
-    }
-
-    private void trough(JobSettings job, double price)
-            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        CoinbaseStatsResponse stats = productsService.getProductStats(job.getProductId());
-        if (stats == null) {
-            log.error("Stats for {} are null.", job.getProductId());
-            return;
-        }
-
-        double minPrice;
-        double midPrice;
-        try {
-            minPrice = roundPrice(Double.parseDouble(stats.getLow()), job.getPrecision());
-            midPrice = roundPrice(Double.parseDouble(stats.getOpen()), job.getPrecision());
-        } catch (Exception e) {
-            log.error("Exception parsing stats occurred. Error: {}", e.getMessage());
-            return;
-        }
-
-        double expectedBuy = job.getFunds() / price;
-        double expectedFees = expectedBuy * COINBASE_PERCENTAGE;
-        double expectedSize = expectedBuy - expectedFees;
-        double percentYield = expectedSize / job.getSize();
-        double priceWantedAbsolute = job.getFunds() / ((job.getPercentageYieldThreshold() * job.getSize()) / (1 - COINBASE_PERCENTAGE));
-        double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
-
-        //Looking for price of 0.376 which is below the 24 hour low of 0.388
-        if (priceWanted < minPrice) {
-            log.warn("Looking for price of {} which is below the 24 hour low of {}. Current mid price is: {}. Current price is: {}",
-                    priceWanted,
-                    minPrice,
-                    midPrice,
-                    price);
-        }
-
-        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
-                job.getJobId(),
-                job.getProductId(),
-                percentYield,
-                job.getPercentageYieldThreshold(),
-                price,
-                priceWanted,
-                midPrice);
-
-        if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
-                || job.isTradeNow()) {
-            if (price > midPrice && !job.isTradeNow()) {
-                log.warn("WARNING!!! This trade will buy product {} above 24 hour mid market value of {}. Must force trade to proceed.",
-                        job.getProductId(),
-                        midPrice);
-                return;
-            } else if (percentYield < 1.0 && job.isTradeNow()) {
-                log.warn("WARNING!!! This sale is going to cost more than would gain. Net loss percentage will be: {}", percentYield);
-            }else if (percentYield < 1.0) {
-                log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
-                return;
-            } else if (percentYield < WARNING_DELTA) {
-                log.warn("WARNING!!! This sale is below the {}% gain warning threshold. Net gain percent will be: {}%", WARNING_DELTA * 100, percentYield * 100);
-            }
-
-            // Send trade request
-            CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-            request.setOrderId(job.getOrderId());
-            request.setSide(CoinbaseOrderRequest.BUY);
-            request.setFunds(String.valueOf(job.getFunds()));
-            request.setProductId(job.getProductId());
-            boolean success = trade(request);
-
-            // Update job to hold until sell is complete
-            if (success) {
-                job.setPending(true);
-                autoAppDao.startOrUpdateJob(job);
-                bustCache = true;
-            } else {
-                job.setOrderId(UUID.randomUUID().toString());
-                autoAppDao.startOrUpdateJob(job);
-                bustCache = true;
-            }
-
-            return;
-        }
-
-        if (!job.isCrossedPercentageYieldThreshold() && percentYield > job.getPercentageYieldThreshold()) {
-            log.info("Job ID: {} - Crossed {} yield threshold of {}",
-                    job.getJobId(),
-                    job.getProductId(),
-                    job.getPercentageYieldThreshold()
-            );
-            job.setCrossedPercentageYieldThreshold(true);
-            job.setMaxYieldValue(percentYield);
-            autoAppDao.startOrUpdateJob(job);
-            bustCache = true;
-        }
-
-        if (job.isCrossedPercentageYieldThreshold() && percentYield > job.getMaxYieldValue()) {
-            job.setMaxYieldValue(percentYield);
             autoAppDao.startOrUpdateJob(job);
             bustCache = true;
         }
@@ -423,8 +316,9 @@ public class AutoTradingService implements Runnable {
         double expectedSale = price * job.getSize();
         double expectedFees = expectedSale * COINBASE_PERCENTAGE;
         double expectedFunds = expectedSale - expectedFees;
-        double percentYield = expectedFunds / job.getFunds();
-        double priceWantedAbsolute = (job.getPercentageYieldThreshold() * job.getFunds()) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
+        double expectedBuyFunds = expectedFunds * COINBASE_PERCENTAGE;
+        double percentYield = expectedBuyFunds / job.getFunds();
+        double priceWantedAbsolute = ((job.getPercentageYieldThreshold() * job.getFunds()) / COINBASE_PERCENTAGE) / (job.getSize() - (job.getSize() * COINBASE_PERCENTAGE));
         double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
 
         if (priceWanted > maxPrice) {
