@@ -249,7 +249,7 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        log.info("Checking pending jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
+        log.info("Checking trough jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 price,
