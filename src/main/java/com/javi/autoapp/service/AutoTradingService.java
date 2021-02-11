@@ -249,11 +249,13 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
+        double absolutePriceWanted = midPrice / WINDOW_BUFFER;
+        double priceWanted = roundPrice(absolutePriceWanted, job.getPrecision());
         log.info("Checking trough jobId: {} - ProductId: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}",
                 job.getJobId(),
                 job.getProductId(),
                 price,
-                (midPrice / WINDOW_BUFFER),
+                priceWanted,
                 midPrice);
 
         if ((job.isCrossedLowThreshold() && price > job.getMinValue())
@@ -281,7 +283,7 @@ public class AutoTradingService implements Runnable {
             return;
         }
 
-        if (!job.isCrossedLowThreshold() && price < (midPrice / WINDOW_BUFFER)) {
+        if (!job.isCrossedLowThreshold() && price < priceWanted) {
             log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
             job.setCrossedLowThreshold(true);
             job.setMinValue(price);
