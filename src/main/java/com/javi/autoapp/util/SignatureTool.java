@@ -1,5 +1,14 @@
 package com.javi.autoapp.util;
 
+import static com.javi.autoapp.util.CoinbasePathConstants.END_QUERY_PARAM;
+import static com.javi.autoapp.util.CoinbasePathConstants.GET_ORDER_REQUEST_PATH;
+import static com.javi.autoapp.util.CoinbasePathConstants.GET_STATS_REQUEST_PATH;
+import static com.javi.autoapp.util.CoinbasePathConstants.GET_STATS_SLICES_REQUEST_PATH;
+import static com.javi.autoapp.util.CoinbasePathConstants.GRANULARITY;
+import static com.javi.autoapp.util.CoinbasePathConstants.GRANULARITY_QUERY_PARAM;
+import static com.javi.autoapp.util.CoinbasePathConstants.POST_ORDER_REQUEST_PATH;
+import static com.javi.autoapp.util.CoinbasePathConstants.START_QUERY_PARAM;
+
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -11,10 +20,6 @@ public class SignatureTool {
     public static final String KEY = System.getProperty("COINBASE_KEY");
     public static final String PASSPHRASE = System.getProperty("COINBASE_PASS");
     public static final String SECRET = System.getProperty("COINBASE_SECRET");
-
-    private static final String POST_ORDER_REQUEST_PATH = "/orders";
-    private static final String GET_ORDER_REQUEST_PATH = "/orders/client:{id}";
-    private static final String GET_STATS_REQUEST_PATH = "/products/{productId}/stats";
 
     public static String getOrdersRequestPath() {
         return POST_ORDER_REQUEST_PATH;
@@ -30,6 +35,16 @@ public class SignatureTool {
     public static String getStatsRequestPath(String productId) {
         return UriComponentsBuilder.newInstance()
                 .path(GET_STATS_REQUEST_PATH)
+                .buildAndExpand(productId)
+                .toUriString();
+    }
+
+    public static String getStatsSlicesRequestPath(String start, String end, String productId) {
+        return UriComponentsBuilder.newInstance()
+                .path(GET_STATS_SLICES_REQUEST_PATH)
+                .queryParam(START_QUERY_PARAM, start)
+                .queryParam(END_QUERY_PARAM, end)
+                .queryParam(GRANULARITY_QUERY_PARAM, GRANULARITY)
                 .buildAndExpand(productId)
                 .toUriString();
     }

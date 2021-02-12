@@ -242,10 +242,15 @@ public class AutoTradingService implements Runnable {
 
         double midPrice;
         try {
-            midPrice = roundPrice(Double.parseDouble(stats.getOpen()), job.getPrecision());
+            ClientResponse response = productsService.getCurrencyStatsSlices(job.getProductId()).block();
+            assert response != null;
+            Double[][] statsSlices = response.bodyToMono(Double[][].class).block();
+            assert statsSlices != null;
+            double absoluteSlicesMid = (statsSlices[0][3] + statsSlices[1][3] + statsSlices[2][3]) / 3.0;
+            midPrice = roundPrice(absoluteSlicesMid, job.getPrecision());
         } catch (Exception e) {
-            log.error("Exception parsing stats occurred. Error: {}", e.getMessage());
-            return;
+            log.error("Error getting stats slices. Error: {}", e.getMessage());
+            midPrice = roundPrice(Double.parseDouble(stats.getOpen()), job.getPrecision());
         }
 
         log.info("Checking trough jobId: {} - ProductId: {}, CurrentPrice: {}, MidPrice: {}",
