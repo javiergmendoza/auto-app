@@ -83,6 +83,7 @@ public class AutoTradingService implements Runnable {
         cleanupCompletedJobs(jobs);
         checkPendingOrders(jobs);
         autoTrade(jobs);
+        productsService.clearStaleData();
     }
 
     private void deactivateCompletedJobs(List<JobSettings> jobs) {
@@ -205,6 +206,7 @@ public class AutoTradingService implements Runnable {
                     // Check for latest stored price
                     Optional<String> priceString = productsService.getPrice(job.getProductId());
                     if (!priceString.isPresent()) {
+                        log.error("Unable to get current price data for {}", job.getProductId());
                         return;
                     }
 
