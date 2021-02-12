@@ -12,6 +12,7 @@ import com.javi.autoapp.util.SignatureTool;
 import io.netty.handler.codec.http.HttpMethod;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,11 +25,14 @@ import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
 @Slf4j
+@CacheConfig(cacheNames = {"productsService"})
 @Service
 public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
 
@@ -117,6 +121,17 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
         }
     }
 
+    public CoinbaseStatsResponse getProductStatsSlices(String productId)
+            throws InvalidKeyException, NoSuchAlgorithmException {
+        ClientResponse response = updateCurrencyStats(productId).block();
+        if (response.statusCode().isError()) {
+            response.bodyToMono(String.class).subscribe(error -> log.error("Failed to get order status. Error: {}", error));
+            return null;
+        } else {
+            return response.bodyToMono(CoinbaseStatsResponse.class).block();
+        }
+    }
+
     private Mono<ClientResponse> updateCurrencyStats(String productId)
             throws NoSuchAlgorithmException, InvalidKeyException {
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
@@ -125,5 +140,19 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
                 HttpMethod.GET.name(),
                 SignatureTool.getStatsRequestPath(productId));
         return coinbaseTraderClient.getDayTradeStatus(timestamp, signature, productId);
+    }
+
+    @Cacheable
+    public Mono<ClientResponse> getCurrencyStatsSlices(String productId)
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        Instant instantNow = Instant.now();
+        String timestamp = String.valueOf(instantNow.getEpochSecond());
+        String start = Instant.now().minus(Duration.ofHours(3)).toString();
+        String end = instantNow.toString();
+        String signature = SignatureTool.getSignature(
+                timestamp,
+                HttpMethod.GET.name(),
+                SignatureTool.getStatsSlicesRequestPath(start, end, productId));
+        return coinbaseTraderClient.getDayTradeStatusSlices(start, end, timestamp, signature, productId);
     }
 }
