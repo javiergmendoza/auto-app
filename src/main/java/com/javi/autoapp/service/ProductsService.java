@@ -65,6 +65,11 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
         return activeFeeds;
     }
 
+    public void clearStaleData() {
+        pricesMap.clear();
+        activeFeeds.clear();
+    }
+
     @Override
     public void onMessage(CoinbaseTicker message) {
         if (message.getProductId() == null || message.getPrice() == null) {
@@ -104,24 +109,9 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
             subscribe.setProductIds(Collections.singletonList(Currency.BTC.getLabel()));
             userSession.getAsyncRemote().sendText(mapper.writeValueAsString(subscribe));
         }
-
-        // Clear to prevent storing stale data
-        pricesMap.clear();
-        activeFeeds.clear();
     }
 
     public CoinbaseStatsResponse getProductStats(String productId)
-            throws InvalidKeyException, NoSuchAlgorithmException {
-        ClientResponse response = updateCurrencyStats(productId).block();
-        if (response.statusCode().isError()) {
-            response.bodyToMono(String.class).subscribe(error -> log.error("Failed to get order status. Error: {}", error));
-            return null;
-        } else {
-            return response.bodyToMono(CoinbaseStatsResponse.class).block();
-        }
-    }
-
-    public CoinbaseStatsResponse getProductStatsSlices(String productId)
             throws InvalidKeyException, NoSuchAlgorithmException {
         ClientResponse response = updateCurrencyStats(productId).block();
         if (response.statusCode().isError()) {
