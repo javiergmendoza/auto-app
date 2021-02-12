@@ -37,7 +37,7 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
     private static final double COINBASE_PERCENTAGE = 0.0298;
-    private static final double WARNING_DELTA = 1.02;
+    private static final double RETURN_YIELD = 1.0;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final CacheManager cacheManager;
@@ -322,15 +322,11 @@ public class AutoTradingService implements Runnable {
                 price,
                 priceWanted);
 
-        if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
+        if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue()
+                || (job.isProtectUsd() && percentYield < job.getMaximumLoses()))
                 || job.isTradeNow()) {
-            if (percentYield < 1.0 && job.isTradeNow()) {
-                log.warn("WARNING!!! This sale is going to cost more than would gain. Net loss percentage will be: {}", percentYield);
-            }else if (percentYield < 1.0) {
-                log.error("ERROR!!! This sale would cost more than would gain. Net loss percentage would be: {}", percentYield);
-                return;
-            } else if (percentYield < WARNING_DELTA) {
-                log.warn("WARNING!!! This sale is below the {}% gain warning threshold. Net gain percent will be: {}%", WARNING_DELTA * 100, percentYield * 100);
+            if (percentYield < RETURN_YIELD) {
+                log.warn("WARNING!! Selling product {} at yield loss of {}", job.getProductId(), percentYield);
             }
 
             // Send trade request

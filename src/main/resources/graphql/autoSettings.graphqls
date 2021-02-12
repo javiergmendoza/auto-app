@@ -85,6 +85,10 @@ type Mutation {
         percentageYieldThreshold: Float!,
         # Max yield for sell. Default = 10.0
         totalPercentageYieldThreshold: Float!,
+        # Max losses accured before pulling out. Must have protectUsd set to true for this to be enabled.
+        maximumLoses: Float!,
+        # Set true to pull out given maximumLoses threshold has been reached.
+        protectUsd: Boolean!,
         # Starting amount dollars to invest
         funds: Float!,
         # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
@@ -105,6 +109,10 @@ type Mutation {
         percentageYieldThreshold: Float,
         # Max yield for sell
         totalPercentageYieldThreshold: Float,
+        # Max losses accured before pulling out. Must have protectUsd set to true for this to be enabled.
+        maximumLoses: Float,
+        # Set true to pull out given maximumLoses threshold has been reached.
+        protectUsd: Boolean,
         # Date automated trader should stop trading in UTC timezone. Format: yyyy-mm-ddTHH:MM:SSZ Example: 2021-01-31T07:44:44Z
         expires: String,
         # Set to make immediate buy
