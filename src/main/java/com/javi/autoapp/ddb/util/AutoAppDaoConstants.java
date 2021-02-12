@@ -32,4 +32,5 @@ public interface AutoAppDaoConstants {
     String MIN_VALUE = "minv";
     String PROTECT_USD = "ptcusd";
     String MAXIMUM_LOSSES = "maxloss";
+    String INIT = "init";
 }
