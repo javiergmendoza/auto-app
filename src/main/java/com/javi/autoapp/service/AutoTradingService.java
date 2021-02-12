@@ -36,8 +36,9 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 @Service
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
+    private static final double CHANGE_THRESHOLD = 0.995;
     private static final double COINBASE_PERCENTAGE = 0.0149;
-    private static final double RETURN_YIELD = 1.0;
+    private static final double NO_CHANGE = 1.0;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final CacheManager cacheManager;
@@ -218,6 +219,20 @@ public class AutoTradingService implements Runnable {
                         return;
                     }
                     double price = roundPrice(absolutePrice, job.getPrecision());
+
+                    Optional<String> previousPriceString = productsService.getPrice(job.getProductId());
+                    if (previousPriceString.isPresent()) {
+                        try {
+                            double absolutePreviousPrice = Double.parseDouble(priceString.get());
+                            double previousPrice = roundPrice(absolutePreviousPrice, job.getPrecision());
+                            double priceDifference = price / previousPrice;
+                            if (priceDifference > CHANGE_THRESHOLD && priceDifference < NO_CHANGE) {
+                                price = previousPrice;
+                            }
+                        } catch (Exception e) {
+                            log.error("Exception occurred trying to parse previous price for {}. Error: {}", job.getProductId(), e.getMessage());
+                        }
+                    }
 
                     if (job.isInit()) {
                         try {
@@ -436,7 +451,7 @@ public class AutoTradingService implements Runnable {
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue()
                 || (job.isProtectUsd() && percentYield < job.getMaximumLoses()))
                 || job.isTradeNow()) {
-            if (percentYield < RETURN_YIELD) {
+            if (percentYield < NO_CHANGE) {
                 log.warn("WARNING!! Selling product {} at yield loss of {}", job.getProductId(), percentYield);
             }
 

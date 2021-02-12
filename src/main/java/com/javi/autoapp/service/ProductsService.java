@@ -40,6 +40,7 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
     private final Session userSession;
     private final Set<String> activeFeeds;
     private final Map<String, String> pricesMap;
+    private final Map<String, String> previousPricesMap;
     private final CoinbaseTraderClient coinbaseTraderClient;
 
     public ProductsService(
@@ -52,6 +53,7 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
         this.activeFeeds = Collections.synchronizedSet(new HashSet<>());
         activeFeeds.add(Currency.BTC.getLabel());
         this.pricesMap = new ConcurrentHashMap<>();
+        this.previousPricesMap = new ConcurrentHashMap<>();
 
         userSession = session;
         userSession.addMessageHandler(this);
@@ -59,6 +61,10 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
 
     public Optional<String> getPrice(String productId) {
         return Optional.ofNullable(pricesMap.get(productId));
+    }
+
+    public Optional<String> getPreviousPrice(String productId) {
+        return Optional.ofNullable(previousPricesMap.get(productId));
     }
 
     public Set<String> getActiveFeeds() {
@@ -76,6 +82,10 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
             return;
         }
         activeFeeds.add(message.getProductId());
+        String previousPrice = pricesMap.get(message.getProductId());
+        if (previousPrice != null) {
+            previousPricesMap.put(message.getProductId(), previousPrice);
+        }
         pricesMap.put(message.getProductId(), message.getPrice());
     }
 
