@@ -8,6 +8,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.EXPIRES;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.FUNDS;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INCREASE_FUNDS_BY;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INIT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAXIMUM_LOSSES;
@@ -103,4 +104,7 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = PROTECT_USD)
     private boolean protectUsd = false;
+
+    @DynamoDBAttribute(attributeName = INIT)
+    private boolean init = true;
 }

@@ -104,7 +104,6 @@ public class CoinbaseTraderClient {
                 .queryParam(GRANULARITY_QUERY_PARAM, GRANULARITY)
                 .buildAndExpand(productId)
                 .toUriString();
-        log.info("Status slices URI: {}", uri);
         return webClient.get()
                 .uri(uri)
                 .headers(httpHeaders -> {
