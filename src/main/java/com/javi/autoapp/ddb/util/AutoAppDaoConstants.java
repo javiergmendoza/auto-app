@@ -30,4 +30,6 @@ public interface AutoAppDaoConstants {
     String MAX_YIELD_VALUE = "maxyv";
     String CROSSED_YIELD_THRESHOLD = "crssdyt";
     String MIN_VALUE = "minv";
+    String PROTECT_USD = "ptcusd";
+    String MAXIMUM_LOSSES = "maxloss";
 }

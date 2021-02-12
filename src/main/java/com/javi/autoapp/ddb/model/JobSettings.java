@@ -10,6 +10,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.HASH_KEY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.INCREASE_FUNDS_BY;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_ID;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.JOB_SETTINGS_ID;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAXIMUM_LOSSES;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MAX_YIELD_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.MIN_VALUE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.ORDER_ID;
@@ -17,6 +18,7 @@ import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PERCENTAGE_YIELD_THR
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PENDING;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRECISION_FROM_CENT;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PRODUCT_ID;
+import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.PROTECT_USD;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SELL;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.SIZE;
 import static com.javi.autoapp.ddb.util.AutoAppDaoConstants.STARTING_FUNDS_USD;
@@ -87,6 +89,9 @@ public class JobSettings {
     @DynamoDBAttribute(attributeName = INCREASE_FUNDS_BY)
     private double increaseFundsBy = 0.0;
 
+    @DynamoDBAttribute(attributeName = MAXIMUM_LOSSES)
+    private double maximumLoses = 90.0;
+
     @DynamoDBAttribute(attributeName = ACTIVE)
     private boolean active = true;
 
@@ -95,4 +100,7 @@ public class JobSettings {
 
     @DynamoDBAttribute(attributeName = TRADE_NOW)
     private boolean tradeNow = false;
+
+    @DynamoDBAttribute(attributeName = PROTECT_USD)
+    private boolean protectUsd = false;
 }

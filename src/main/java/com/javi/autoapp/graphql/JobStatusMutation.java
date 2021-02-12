@@ -32,6 +32,8 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             int precision,
             double percentageYieldThreshold,
             double totalPercentageYieldThreshold,
+            double maximumLoses,
+            boolean protectUsd,
             double funds,
             String expires,
             boolean tradeNow,
@@ -48,6 +50,8 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         settings.setPrecision(precision);
         settings.setPercentageYieldThreshold(percentageYieldThreshold);
         settings.setTotalPercentageYieldThreshold(totalPercentageYieldThreshold);
+        settings.setMaximumLoses(maximumLoses);
+        settings.setProtectUsd(protectUsd);
         settings.setFunds(funds);
         settings.setStartingFundsUsd(funds);
         settings.setExpires(expires);
@@ -75,6 +79,8 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             Optional<Double> increaseFundsBy,
             Optional<Double> percentageYieldThreshold,
             Optional<Double> totalPercentageYieldThreshold,
+            Optional<Double> maximumLoses,
+            Optional<Boolean> protectUsd,
             Optional<String> expires,
             Optional<Boolean> tradeNow,
             DataFetchingEnvironment environment) {
@@ -106,6 +112,8 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         percentageYieldThreshold.ifPresent(settings::setPercentageYieldThreshold);
         precision.ifPresent(settings::setPrecision);
         totalPercentageYieldThreshold.ifPresent(settings::setTotalPercentageYieldThreshold);
+        maximumLoses.ifPresent(settings::setMaximumLoses);
+        protectUsd.ifPresent(settings::setProtectUsd);
         expires.ifPresent(settings::setExpires);
         tradeNow.ifPresent(settings::setTradeNow);
         autoAppDao.startOrUpdateJob(settings);
