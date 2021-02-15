@@ -1,9 +1,11 @@
 package com.javi.autoapp.config;
 
+import com.javi.autoapp.security.XssStrictHttpFirewall;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -37,7 +39,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .permitAll()
         .antMatchers("/actuator/health")
             .permitAll()
-        .antMatchers("/graphiql")
+        .antMatchers("/**")
             .hasAnyRole("USER").anyRequest().authenticated()
         .and()
             .formLogin()
@@ -51,5 +53,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
             .csrf()
             .disable();
+    }
+
+    @Override
+    public final void configure(final WebSecurity web) throws Exception
+    {
+        super.configure(web);
+        web.httpFirewall(new XssStrictHttpFirewall());
     }
 }

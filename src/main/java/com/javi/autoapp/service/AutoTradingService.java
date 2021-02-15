@@ -36,9 +36,10 @@ import org.springframework.web.reactive.function.client.ClientResponse;
 @Service
 @RequiredArgsConstructor
 public class AutoTradingService implements Runnable {
-    private static final double CHANGE_THRESHOLD = 0.995;
+    private static final double CHANGE_LOW_THRESHOLD = 0.995;
+    private static final double CHANGE_HIGH_THRESHOLD = 1.005;
     private static final double COINBASE_PERCENTAGE = 0.0149;
-    private static final double NO_CHANGE = 1.0;
+    private static final double RETURN_YIELD = 1.0;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private final CacheManager cacheManager;
@@ -226,7 +227,7 @@ public class AutoTradingService implements Runnable {
                             double absolutePreviousPrice = Double.parseDouble(priceString.get());
                             double previousPrice = roundPrice(absolutePreviousPrice, job.getPrecision());
                             double priceDifference = price / previousPrice;
-                            if (priceDifference > CHANGE_THRESHOLD && priceDifference < NO_CHANGE) {
+                            if (priceDifference > CHANGE_LOW_THRESHOLD && priceDifference < CHANGE_HIGH_THRESHOLD) {
                                 price = previousPrice;
                             }
                         } catch (Exception e) {
@@ -451,7 +452,7 @@ public class AutoTradingService implements Runnable {
         if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue()
                 || (job.isProtectUsd() && percentYield < job.getMaximumLoses()))
                 || job.isTradeNow()) {
-            if (percentYield < NO_CHANGE) {
+            if (percentYield < RETURN_YIELD) {
                 log.warn("WARNING!! Selling product {} at yield loss of {}", job.getProductId(), percentYield);
             }
 
