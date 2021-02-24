@@ -4,9 +4,9 @@ spring:
   main:
     log-startup-info: false
   cache:
-    cache-names: coinbaseClient, productsService
+    cache-names: coinbaseClient
     caffeine:
-      spec: maximumSize=500,expireAfterWrite=3h
+      spec: maximumSize=500,expireAfterWrite=24h
   port: 8080
   mvc:
     view:
@@ -29,3 +29,37 @@ resilience4j.ratelimiter:
 
 coinbaseWebSocketUri: wss://ws-feed.pro.coinbase.com
 coinbaseApiUri: https://api.pro.coinbase.com
+
+graphql:
+  tools:
+    schema-location-pattern: "**/*.graphqls"
+    introspection-enabled: true
+  servlet:
+    enabled: true
+    mapping: /graphql
+    cors-enabled: true
+    cors:
+      allowed-origins: https://kiro.javi-autoapp.com
+      allowed-methods: GET, HEAD, POST
+    exception-handlers-enabled: true
+    context-setting: PER_REQUEST_WITH_INSTRUMENTATION
+    async-mode-enabled: true
+
+graphiql:
+  mapping: /graphiql
+  endpoint:
+    graphql: /graphql
+    subscriptions: /subscriptions
+  subscriptions:
+    timeout: 30
+    reconnect: false
+  static:
+    basePath: /
+  enabled: true
+  pageTitle: GraphiQL
+  cdn:
+    enabled: false
+    version: 0.13.0
+  props:
+    variables:
+      editorTheme: "solarized light"

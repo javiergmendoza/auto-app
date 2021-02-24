@@ -2,22 +2,26 @@ package com.javi.autoapp.graphql;
 
 import static com.javi.autoapp.graphql.type.Status.STOPPED;
 
-import com.coxautodev.graphql.tools.GraphQLMutationResolver;
 import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobSettings;
+import com.javi.autoapp.exception.InvalidInputException;
 import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.ddb.model.JobStatus;
 import com.javi.autoapp.util.CacheHelper;
-import graphql.schema.DataFetchingEnvironment;
-import graphql.servlet.GenericGraphQLError;
+import graphql.GraphQLError;
+import graphql.GraphqlErrorBuilder;
+import graphql.kickstart.spring.error.ErrorContext;
+import graphql.kickstart.tools.GraphQLMutationResolver;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.graalvm.compiler.nodes.calc.IntegerDivRemNode.Op;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 
 @Slf4j
 @Component
@@ -36,11 +40,9 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             boolean protectUsd,
             double funds,
             String expires,
-            boolean tradeNow,
-            DataFetchingEnvironment environment) {
+            boolean tradeNow) throws InvalidInputException {
         if (percentageYieldThreshold < MINIMUM_PERCENTAGE_YIELD) {
-            environment.getExecutionContext().addError(new GenericGraphQLError("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses."));
-            return null;
+            throw new InvalidInputException("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses.");
         }
 
         // Create init job settings
@@ -82,18 +84,15 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             Optional<Double> maximumLoses,
             Optional<Boolean> protectUsd,
             Optional<String> expires,
-            Optional<Boolean> tradeNow,
-            DataFetchingEnvironment environment) {
+            Optional<Boolean> tradeNow) throws InvalidInputException {
         // Job settings
         JobSettings settings = autoAppDao.getJobSettings(jobID);
         if (settings == null) {
-            environment.getExecutionContext().addError(new GenericGraphQLError("Unable to find specified job."));
-            return null;
+            throw new InvalidInputException("Unable to find specified job.");
         }
 
         if (percentageYieldThreshold.isPresent() && percentageYieldThreshold.get() < MINIMUM_PERCENTAGE_YIELD) {
-            environment.getExecutionContext().addError(new GenericGraphQLError("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses."));
-            return null;
+            throw new InvalidInputException("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses.");
         }
 
         JobStatus status = autoAppDao.getJobStatus(jobID);
@@ -155,5 +154,19 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             status.setStatus(STOPPED);
             autoAppDao.updateJobStatus(status);
         }).collect(Collectors.toList());
+    }
+
+    @ExceptionHandler(value = InvalidInputException.class)
+    public GraphQLError toCustomError(IllegalStateException e, ErrorContext errorContext) {
+        Map<String, Object> extensions = Optional
+                .ofNullable(errorContext.getExtensions()).orElseGet(HashMap::new);
+        extensions.put("mutations", "invalid-input-exception");
+        return GraphqlErrorBuilder.newError()
+                .message(e.getMessage())
+                .extensions(extensions)
+                .errorType(errorContext.getErrorType())
+                .locations(errorContext.getLocations())
+                .path(errorContext.getPath())
+                .build();
     }
 }

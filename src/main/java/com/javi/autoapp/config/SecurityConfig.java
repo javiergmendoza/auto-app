@@ -39,7 +39,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .permitAll()
         .antMatchers("/actuator/health")
             .permitAll()
-        .antMatchers("/**")
+        .antMatchers("/graphiql")
             .hasAnyRole("USER").anyRequest().authenticated()
         .and()
             .formLogin()
