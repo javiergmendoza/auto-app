@@ -83,9 +83,9 @@ dependencies {
     compile group: 'io.github.resilience4j', name: 'resilience4j-spring-boot2', version: '0.13.2'
 
     // GraphQl
-    compile group: 'com.graphql-java', name: 'graphql-spring-boot-starter', version: '5.0.2'
-    compile group: 'com.graphql-java', name: 'graphql-java-tools', version: '5.2.4'
-    compile group: 'com.graphql-java', name: 'graphiql-spring-boot-starter', version: '5.0.2'
+    compile group: 'com.graphql-java-kickstart', name: 'graphql-spring-boot-starter', version: '11.0.0'
+    implementation group: 'com.graphql-java-kickstart', name: 'graphql-java-tools', version: '11.0.0'
+    compile group: 'com.graphql-java-kickstart', name: 'graphiql-spring-boot-starter', version: '11.0.0'
     compile 'net.sf.jopt-simple:jopt-simple:6.0-alpha-2'
 
     // AWS

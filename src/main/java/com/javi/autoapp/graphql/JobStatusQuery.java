@@ -1,11 +1,10 @@
 package com.javi.autoapp.graphql;
 
-import com.coxautodev.graphql.tools.GraphQLQueryResolver;
 import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobStatus;
 import com.javi.autoapp.graphql.type.Currency;
-import com.javi.autoapp.service.AutoTradingService;
 import com.javi.autoapp.service.ProductsService;
+import graphql.kickstart.tools.GraphQLQueryResolver;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;

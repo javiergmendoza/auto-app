@@ -3,57 +3,45 @@ package com.javi.autoapp.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javi.autoapp.client.CoinbaseTraderClient;
-import com.javi.autoapp.client.model.CoinbaseStatsResponse;
 import com.javi.autoapp.client.model.CoinbaseTicker;
 import com.javi.autoapp.client.model.CoinbaseWebSocketSubscribe;
-import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.graphql.type.Currency;
-import com.javi.autoapp.util.SignatureTool;
-import io.netty.handler.codec.http.HttpMethod;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import com.javi.autoapp.model.ProductPriceSegment;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import javax.websocket.MessageHandler;
 import javax.websocket.Session;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import reactor.core.publisher.Mono;
 
 @Slf4j
-@CacheConfig(cacheNames = {"productsService"})
 @Service
 public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
+    public static final int MAX_SEGMENTS = 5;
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final Session userSession;
     private final Set<String> activeFeeds;
     private final Map<String, String> pricesMap;
-    private final Map<String, String> previousPricesMap;
-    private final CoinbaseTraderClient coinbaseTraderClient;
+    private final Map<String, Deque<ProductPriceSegment>> priceSegments15Map;
 
     public ProductsService(
-            CacheManager cacheManager,
             Session session,
-            CoinbaseTraderClient coinbaseTraderClient,
-            AutoAppDao autoAppDao
+            CoinbaseTraderClient coinbaseTraderClient
     ) {
-        this.coinbaseTraderClient = coinbaseTraderClient;
         this.activeFeeds = Collections.synchronizedSet(new HashSet<>());
         activeFeeds.add(Currency.BTC.getLabel());
+        this.priceSegments15Map = new ConcurrentHashMap<>();
         this.pricesMap = new ConcurrentHashMap<>();
-        this.previousPricesMap = new ConcurrentHashMap<>();
 
         userSession = session;
         userSession.addMessageHandler(this);
@@ -63,8 +51,8 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
         return Optional.ofNullable(pricesMap.get(productId));
     }
 
-    public Optional<String> getPreviousPrice(String productId) {
-        return Optional.ofNullable(previousPricesMap.get(productId));
+    public Optional<Deque<ProductPriceSegment>> getPriceSegment15(String productId) {
+        return Optional.ofNullable(priceSegments15Map.get(productId));
     }
 
     public Set<String> getActiveFeeds() {
@@ -72,7 +60,6 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
     }
 
     public void clearStaleData() {
-        pricesMap.clear();
         activeFeeds.clear();
     }
 
@@ -81,12 +68,34 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
         if (message.getProductId() == null || message.getPrice() == null) {
             return;
         }
+
         activeFeeds.add(message.getProductId());
-        String previousPrice = pricesMap.get(message.getProductId());
-        if (previousPrice != null) {
-            previousPricesMap.put(message.getProductId(), previousPrice);
-        }
+
         pricesMap.put(message.getProductId(), message.getPrice());
+
+        Deque<ProductPriceSegment> priceSegments15Queue = priceSegments15Map.get(message.getProductId());
+        if (priceSegments15Queue == null) {
+            priceSegments15Queue = new ConcurrentLinkedDeque<>();
+        }
+
+        ProductPriceSegment fistPriceSegment = priceSegments15Queue.pollFirst();
+        if (fistPriceSegment == null || Instant.now().minus(Duration.ofMinutes(15)).isAfter(fistPriceSegment.getTimestamp())) {
+            log.info("Creating a new 15 minute price segment for {}", message.getProductId());
+            if (fistPriceSegment != null) {
+                priceSegments15Queue.addFirst(fistPriceSegment);
+            }
+            ProductPriceSegment newPriceSegment = new ProductPriceSegment();
+            newPriceSegment.aggregatePrice(message.getPrice());
+            priceSegments15Queue.addFirst(newPriceSegment);
+        } else {
+            fistPriceSegment.aggregatePrice(message.getPrice());
+            priceSegments15Queue.addFirst(fistPriceSegment);
+        }
+
+        if (priceSegments15Queue.size() > MAX_SEGMENTS) {
+            priceSegments15Queue.removeLast();
+        }
+        priceSegments15Map.put(message.getProductId(), priceSegments15Queue);
     }
 
     public void updateSubscribedCurrencies(Set<String> productIds) throws JsonProcessingException {
@@ -106,6 +115,7 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
 
         // Subscribe to required product IDs
         if (!productIds.isEmpty()) {
+            productIds.forEach(priceSegments15Map::remove);
             log.info("Subscribing to the following currency feeds: {}", productIds.toString());
             CoinbaseWebSocketSubscribe subscribe = new CoinbaseWebSocketSubscribe();
             subscribe.setType(CoinbaseWebSocketSubscribe.SUBSCRIBE);
@@ -119,40 +129,5 @@ public class ProductsService implements MessageHandler.Whole<CoinbaseTicker> {
             subscribe.setProductIds(Collections.singletonList(Currency.BTC.getLabel()));
             userSession.getAsyncRemote().sendText(mapper.writeValueAsString(subscribe));
         }
-    }
-
-    public CoinbaseStatsResponse getProductStats(String productId)
-            throws InvalidKeyException, NoSuchAlgorithmException {
-        ClientResponse response = updateCurrencyStats(productId).block();
-        if (response.statusCode().isError()) {
-            response.bodyToMono(String.class).subscribe(error -> log.error("Failed to get order status. Error: {}", error));
-            return null;
-        } else {
-            return response.bodyToMono(CoinbaseStatsResponse.class).block();
-        }
-    }
-
-    private Mono<ClientResponse> updateCurrencyStats(String productId)
-            throws NoSuchAlgorithmException, InvalidKeyException {
-        String timestamp = String.valueOf(Instant.now().getEpochSecond());
-        String signature = SignatureTool.getSignature(
-                timestamp,
-                HttpMethod.GET.name(),
-                SignatureTool.getStatsRequestPath(productId));
-        return coinbaseTraderClient.getDayTradeStatus(timestamp, signature, productId);
-    }
-
-    @Cacheable
-    public Mono<ClientResponse> getCurrencyStatsSlices(String productId)
-            throws NoSuchAlgorithmException, InvalidKeyException {
-        Instant instantNow = Instant.now();
-        String timestamp = String.valueOf(instantNow.getEpochSecond());
-        String start = Instant.now().minus(Duration.ofHours(3)).toString();
-        String end = instantNow.toString();
-        String signature = SignatureTool.getSignature(
-                timestamp,
-                HttpMethod.GET.name(),
-                SignatureTool.getStatsSlicesRequestPath(start, end, productId));
-        return coinbaseTraderClient.getDayTradeStatusSlices(start, end, timestamp, signature, productId);
     }
 }
