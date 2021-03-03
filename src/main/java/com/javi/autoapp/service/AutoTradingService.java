@@ -1,27 +1,22 @@
 package com.javi.autoapp.service;
 
-import static com.javi.autoapp.service.ProductsService.MAX_SEGMENTS;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javi.autoapp.client.CoinbaseTraderClient;
 import com.javi.autoapp.client.model.CoinbaseOrderRequest;
 import com.javi.autoapp.client.model.CoinbaseOrderResponse;
+import com.javi.autoapp.client.model.CoinbaseStatsResponse;
 import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobSettings;
 import com.javi.autoapp.ddb.model.JobStatus;
 import com.javi.autoapp.graphql.type.Status;
-import com.javi.autoapp.model.ProductPriceSegment;
 import com.javi.autoapp.util.CacheHelper;
 import com.javi.autoapp.util.SignatureTool;
 import io.netty.handler.codec.http.HttpMethod;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.UUID;
@@ -81,7 +76,7 @@ public class AutoTradingService implements Runnable {
 
         try {
             productsService.updateSubscribedCurrencies(productIds);
-        } catch (JsonProcessingException error) {
+        } catch (Exception error) {
             log.error("Failed to update subcription tickers. Error: {}", error.getMessage());
         }
 
@@ -89,7 +84,7 @@ public class AutoTradingService implements Runnable {
         cleanupCompletedJobs(jobs);
         checkPendingOrders(jobs);
         autoTrade(jobs);
-        productsService.clearStaleData();
+        productsService.clearActiveFeeds();
     }
 
     private void deactivateCompletedJobs(List<JobSettings> jobs) {
@@ -149,7 +144,9 @@ public class AutoTradingService implements Runnable {
             double value;
             double size;
             try {
-                value = Double.parseDouble(response.getExecutedValue());
+                double executedValue = Double.parseDouble(response.getExecutedValue());
+                double fillFees = Double.parseDouble(response.getFillFees());
+                value = Math.floor((executedValue - fillFees) * 100.0) / 100.0;
                 size = Double.parseDouble(response.getFilledSize());
             } catch (Exception e) {
                 log.error("Exception occurred trying to parse trade response. Error: {}", e.getMessage());
@@ -210,72 +207,54 @@ public class AutoTradingService implements Runnable {
                 .filter(job -> !job.isPending())
                 .forEach(job -> {
                     // Check for latest price
-                    Optional<String> priceStringOptional = productsService.getPrice(job.getProductId());
-                    if (!priceStringOptional.isPresent()) {
+                    OptionalDouble priceOptional = productsService.getPrice(job.getProductId());
+                    if (!priceOptional.isPresent()) {
                         return;
                     }
-                    double price = Double.parseDouble(priceStringOptional.get());
+                    double price = roundPrice(priceOptional.getAsDouble(), job.getPrecision());
 
                     // Check for latest history
-                    Optional<Deque<ProductPriceSegment>> priceSegment15Optional = productsService.getPriceSegment15(job.getProductId());
-                    if (!priceSegment15Optional.isPresent()) {
-                        log.error("Unable to get price data for {}", job.getProductId());
-                        return;
-                    }
-
-                    Deque<ProductPriceSegment> priceSegment15 = priceSegment15Optional.get();
-                    if (priceSegment15.size() < MAX_SEGMENTS) {
-                        log.info("Not enough data gathered to begin trading for {}", job.getProductId());
-                        return;
-                    }
-
-                    OptionalDouble midPriceOptional = priceSegment15.stream().mapToDouble(ProductPriceSegment::getOpenPrice).average();
+                    OptionalDouble midPriceOptional = productsService.getMid(job.getProductId());
+                    double midPrice;
                     if (!midPriceOptional.isPresent()) {
-                        log.error("Unable to get mid market price for mid market buy phase. Currency: {}", job.getProductId());
-                        return;
-                    }
-                    double midPrice = roundPrice(midPriceOptional.getAsDouble(), job.getPrecision());
-
-                    if (job.isInit()) {
                         try {
-                            handleMidMarketBuy(job, priceSegment15, midPrice, price);
+                            CoinbaseStatsResponse statsResponse = productsService.getProductStats(job.getProductId());
+                            midPrice = roundPrice(Double.parseDouble(statsResponse.getOpen()), job.getPrecision());
                         } catch (Exception e) {
-                            log.error("Failed to handle init period. Exception: {}", e.getMessage());
-                        }
-                    } else if (job.isSell()) {
-                        try {
-                            crest(job, priceSegment15, midPrice, price);
-                        } catch (Exception e) {
-                            log.error("Failed to handle crest period. Exception: {}", e.getMessage());
+                            log.error("Unable to get price stats for product ID: {}", job.getProductId());
+                            return;
                         }
                     } else {
-                        try {
-                            trough(job, priceSegment15, midPrice, price);
-                        } catch (Exception e) {
-                            log.error("Failed to handle trough period. Exception: {}", e.getMessage());
-                        }
+                        midPrice = roundPrice(midPriceOptional.getAsDouble(), job.getPrecision());
+                    }
+
+                    if (job.isTradeNow()) {
+                        trade(job);
+                    } else if (job.isInit()) {
+                        handleMidMarketBuy(job, midPrice, price);
+                    } else if (job.isSell()) {
+                        crest(job, midPrice, price);
+                    } else {
+                        trough(job, midPrice, price);
                     }
                 });
     }
 
-    private void trough(JobSettings job, Deque<ProductPriceSegment> priceSegment15, double midPrice, double price)
-            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        List<ProductPriceSegment> minPriceSegment = new ArrayList<>(priceSegment15);
-        OptionalDouble minPriceOptional = minPriceSegment.stream().mapToDouble(ProductPriceSegment::getLowPrice).min();
-        if (!minPriceOptional.isPresent()) {
-            log.error("Unable to get min price for trough period.");
-            return;
-        }
-        double minPrice = roundPrice(minPriceOptional.getAsDouble(), job.getPrecision());
-
-        double expectedBuy = job.getFunds() / midPrice;
+    private void trough(JobSettings job, double midPrice, double price) {
+        double expectedBuy = job.getFunds() / price;
         double expectedFees = expectedBuy * COINBASE_PERCENTAGE;
         double expectedSize = expectedBuy - expectedFees;
         double percentYield = expectedSize / job.getSize();
         double priceWantedAbsolute = job.getFunds() / ((job.getPercentageYieldThreshold() * job.getSize()) / (1 - COINBASE_PERCENTAGE));
         double priceWanted = roundPrice(priceWantedAbsolute, job.getPrecision());
 
-        log.info("Checking trough jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}, MinPrice: {}",
+        double priceIncreasePercent = job.getPercentageYieldThreshold() + COINBASE_PERCENTAGE - 1.0;
+        double priceThreshold = 1.0 - (priceIncreasePercent / 2.0);
+        double minPriceThreshold = 1.0 - (priceIncreasePercent * 1.5);
+        double lowThreshold = roundPrice(midPrice * priceThreshold, job.getPrecision());
+        double minPrice = roundPrice(midPrice * minPriceThreshold, job.getPrecision());
+
+        log.info("Checking trough jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}, MinPrice: {}, LowThreshold: {}, Change: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
@@ -283,25 +262,20 @@ public class AutoTradingService implements Runnable {
                 price,
                 priceWanted,
                 midPrice,
-                minPrice);
+                minPrice,
+                lowThreshold,
+                productsService.getChange(job.getProductId()).orElse(0.0));
 
         if (priceWanted < minPrice) {
-            handleMidMarketBuy(job, priceSegment15, midPrice, price);
-        } else {
+            handleMidMarketBuy(job, midPrice, price);
+        } else if ((price < lowThreshold) || (lowThreshold < minPrice && price < midPrice)) {
             handlePercentageYieldThreshold(job, percentYield, false);
+        } else {
+            log.info("Price not below mid threshold required for trough period. CurrentPrice: {}", price);
         }
     }
 
-    private void crest(JobSettings job, Deque<ProductPriceSegment> priceSegment15, double midPrice, double price)
-            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        List<ProductPriceSegment> maxPriceSegment = new ArrayList<>(priceSegment15);
-        OptionalDouble maxPriceOptional = maxPriceSegment.stream().mapToDouble(ProductPriceSegment::getHighPrice).max();
-        if (!maxPriceOptional.isPresent()) {
-            log.error("Unable to get max price for crest period.");
-            return;
-        }
-        double maxPrice = roundPrice(maxPriceOptional.getAsDouble(), job.getPrecision());
-
+    private void crest(JobSettings job, double midPrice, double price) {
         double expectedSale = price * job.getSize();
         double expectedFees = expectedSale * COINBASE_PERCENTAGE;
         double expectedFunds = expectedSale - expectedFees;
@@ -311,7 +285,13 @@ public class AutoTradingService implements Runnable {
         double absoluteValue = job.getFunds() / job.getSize();
         double value = roundPrice(absoluteValue, job.getPrecision());
 
-        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}, MaxPrice: {}, Value: {}",
+        double priceIncreasePercent = job.getPercentageYieldThreshold() + COINBASE_PERCENTAGE - 1.0;
+        double priceThreshold = 1.0 + (priceIncreasePercent / 2.0);
+        double maxPriceThreshold = 1.0 + (priceIncreasePercent * 1.5);
+        double highThreshold = roundPrice(midPrice * priceThreshold, job.getPrecision());
+        double maxPrice = roundPrice(midPrice * maxPriceThreshold, job.getPrecision());
+
+        log.info("Checking crest jobId: {} - ProductId: {}, CurrentYield: {}, YieldWanted: {}, CurrentPrice: {}, PriceWanted: {}, MidPrice: {}, MaxPrice: {}, Value: {}, HighThreshold: {}, Change: {}",
                 job.getJobId(),
                 job.getProductId(),
                 percentYield,
@@ -320,120 +300,58 @@ public class AutoTradingService implements Runnable {
                 priceWanted,
                 midPrice,
                 maxPrice,
-                value);
+                value,
+                highThreshold,
+                productsService.getChange(job.getProductId()).orElse(0.0));
 
         if (maxPrice < value) {
             log.warn("{} - Max price of {} fell below current value of {}", job.getProductId(), maxPrice, value);
             if (job.isProtectUsd() && (percentYield < job.getMaximumLoses())) {
                 log.warn("Maximum losses reached for this trade. CurrentYield: {}, MaximumLoses: {}", percentYield, job.getMaximumLoses());
-                // Send trade request
-                CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-                request.setOrderId(job.getOrderId());
-                request.setSide(CoinbaseOrderRequest.SELL);
-                request.setSize(String.valueOf(job.getSize()));
-                request.setProductId(job.getProductId());
-                boolean success = trade(request);
-
-                // Update job to hold until sell is complete
-                if (success) {
-                    job.setPending(true);
-                    job.setActive(false);
-                    autoAppDao.startOrUpdateJob(job);
-                    bustCache = true;
-                } else {
-                    job.setOrderId(UUID.randomUUID().toString());
-                    autoAppDao.startOrUpdateJob(job);
-                    bustCache = true;
-                }
+                trade(job);
             }
-        } else {
+        } else if ((price > highThreshold) || (highThreshold > maxPrice && price > midPrice)) {
             handlePercentageYieldThreshold(job, percentYield, true);
+        } else {
+            log.info("Price not above mid threshold required for crest period. CurrentPrice: {}", price);
         }
     }
 
-    private void handleMidMarketBuy(JobSettings job, Deque<ProductPriceSegment> priceSegment15, double midPrice, double price)
-            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        log.info("Checking mid market buy jobId: {} - ProductId: {}, CurrentPrice: {}, MidPrice: {}",
+    private void handleMidMarketBuy(JobSettings job, double midPrice, double price) {
+        double priceIncreasePercent = (job.getPercentageYieldThreshold() + COINBASE_PERCENTAGE - 1.0) / 2.0;
+        double priceThreshold = 1.0 - priceIncreasePercent;
+        double priceWanted = roundPrice(midPrice * priceThreshold, job.getPrecision());
+
+        log.info("Checking mid market buy jobId: {} - ProductId: {}, CurrentPrice: {}, MidPrice: {}, PriceWanted: {}, Change: {}",
                 job.getJobId(),
                 job.getProductId(),
                 price,
-                midPrice);
+                midPrice,
+                priceWanted,
+                productsService.getChange(job.getProductId()).orElse(0.0));
 
-        if ((job.isCrossedLowThreshold() && price > job.getMinValue())
-                || job.isTradeNow()) {
-
-            // Send trade request
-            CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-            request.setOrderId(job.getOrderId());
-            request.setSide(CoinbaseOrderRequest.BUY);
-            request.setFunds(String.valueOf(job.getFunds()));
-            request.setProductId(job.getProductId());
-            boolean success = trade(request);
-
-            // Update job to hold until sell is complete
-            if (success) {
-                job.setPending(true);
-                autoAppDao.startOrUpdateJob(job);
-                bustCache = true;
-            } else {
-                job.setOrderId(UUID.randomUUID().toString());
-                autoAppDao.startOrUpdateJob(job);
-                bustCache = true;
-            }
-
-            return;
+        if ((job.isCrossedLowThreshold() && price > job.getMinValue())) {
+            trade(job);
         }
 
-        if (!job.isCrossedLowThreshold() && price < midPrice) {
+        if (!job.isCrossedLowThreshold() && price < priceWanted) {
             log.info("Job ID: {} - Crossed {} below low threshold.", job.getJobId(), job.getProductId());
             job.setCrossedLowThreshold(true);
-            job.setMinValue(midPrice);
+            job.setMinValue(price);
             autoAppDao.startOrUpdateJob(job);
             bustCache = true;
         }
 
         if (job.isCrossedLowThreshold() && price < job.getMinValue()) {
-            job.setMinValue(midPrice);
+            job.setMinValue(price);
             autoAppDao.startOrUpdateJob(job);
             bustCache = true;
         }
     }
 
-    private void handlePercentageYieldThreshold(JobSettings job, double percentYield, boolean sell)
-            throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
-        if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())
-                || job.isTradeNow()) {
-            if (percentYield < RETURN_YIELD) {
-                log.warn("WARNING!! Selling product {} at yield loss of {}", job.getProductId(), percentYield);
-            }
-
-            // Send trade request
-            CoinbaseOrderRequest request = new CoinbaseOrderRequest();
-            request.setOrderId(job.getOrderId());
-            request.setProductId(job.getProductId());
-
-            if (sell) {
-                request.setSide(CoinbaseOrderRequest.SELL);
-                request.setSize(String.valueOf(job.getSize()));
-            } else {
-                request.setSide(CoinbaseOrderRequest.BUY);
-                request.setFunds(String.valueOf(job.getFunds()));
-            }
-
-            boolean success = trade(request);
-
-            // Update job to hold until sell is complete
-            if (success) {
-                job.setPending(true);
-                autoAppDao.startOrUpdateJob(job);
-                bustCache = true;
-            } else {
-                job.setOrderId(UUID.randomUUID().toString());
-                autoAppDao.startOrUpdateJob(job);
-                bustCache = true;
-            }
-
-            return;
+    private void handlePercentageYieldThreshold(JobSettings job, double percentYield, boolean sell) {
+        if ((job.isCrossedPercentageYieldThreshold() && percentYield < job.getMaxYieldValue())) {
+            trade(job);
         }
 
         if (!job.isCrossedPercentageYieldThreshold() && percentYield > job.getPercentageYieldThreshold()) {
@@ -466,7 +384,40 @@ public class AutoTradingService implements Runnable {
                 });
     }
 
-    private boolean trade(CoinbaseOrderRequest order)
+    private void trade(JobSettings job) {
+        // Send trade request
+        CoinbaseOrderRequest request = new CoinbaseOrderRequest();
+        request.setOrderId(job.getOrderId());
+        request.setProductId(job.getProductId());
+
+        if (job.isSell()) {
+            request.setSide(CoinbaseOrderRequest.SELL);
+            request.setSize(String.valueOf(job.getSize()));
+        } else {
+            request.setSide(CoinbaseOrderRequest.BUY);
+            request.setFunds(String.valueOf(job.getFunds()));
+        }
+
+        boolean success = false;
+        try {
+            success = sendTradeRequest(request);
+        } catch (Exception e) {
+            log.error("Failed trade request.");
+        }
+
+        // Update job to hold until sell is complete
+        if (success) {
+            job.setPending(true);
+            autoAppDao.startOrUpdateJob(job);
+            bustCache = true;
+        } else {
+            job.setOrderId(UUID.randomUUID().toString());
+            autoAppDao.startOrUpdateJob(job);
+            bustCache = true;
+        }
+    }
+
+    private boolean sendTradeRequest(CoinbaseOrderRequest order)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         String timestamp = String.valueOf(Instant.now().getEpochSecond());
         String signature = SignatureTool.getSignature(

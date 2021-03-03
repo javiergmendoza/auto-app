@@ -14,4 +14,7 @@ public class CoinbaseOrderResponse {
     @JsonProperty("filled_size")
     private String filledSize;
     private boolean settled;
+
+    @JsonProperty("fill_fees")
+    private String fillFees;
 }
