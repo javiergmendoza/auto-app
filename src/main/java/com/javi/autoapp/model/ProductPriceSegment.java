@@ -11,6 +11,7 @@ public class ProductPriceSegment {
     private double openPrice = 0.0;
     private double highPrice = 0.0;
     private double lowPrice = Double.MAX_VALUE;
+    private double changePrice = 0.0;
     private long count = 0;
     private Instant timestamp = Instant.now();
     private String timeString = timestamp.toString();

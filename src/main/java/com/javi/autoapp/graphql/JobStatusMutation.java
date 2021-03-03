@@ -4,7 +4,6 @@ import static com.javi.autoapp.graphql.type.Status.STOPPED;
 
 import com.javi.autoapp.ddb.AutoAppDao;
 import com.javi.autoapp.ddb.model.JobSettings;
-import com.javi.autoapp.exception.InvalidInputException;
 import com.javi.autoapp.graphql.type.Currency;
 import com.javi.autoapp.ddb.model.JobStatus;
 import com.javi.autoapp.util.CacheHelper;
@@ -40,9 +39,9 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             boolean protectUsd,
             double funds,
             String expires,
-            boolean tradeNow) throws InvalidInputException {
+            boolean tradeNow) {
         if (percentageYieldThreshold < MINIMUM_PERCENTAGE_YIELD) {
-            throw new InvalidInputException("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses.");
+            throw new IllegalStateException("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses.");
         }
 
         // Create init job settings
@@ -84,15 +83,15 @@ public class JobStatusMutation implements GraphQLMutationResolver {
             Optional<Double> maximumLoses,
             Optional<Boolean> protectUsd,
             Optional<String> expires,
-            Optional<Boolean> tradeNow) throws InvalidInputException {
+            Optional<Boolean> tradeNow) throws IllegalStateException {
         // Job settings
         JobSettings settings = autoAppDao.getJobSettings(jobID);
         if (settings == null) {
-            throw new InvalidInputException("Unable to find specified job.");
+            throw new IllegalStateException("Unable to find specified job.");
         }
 
         if (percentageYieldThreshold.isPresent() && percentageYieldThreshold.get() < MINIMUM_PERCENTAGE_YIELD) {
-            throw new InvalidInputException("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses.");
+            throw new IllegalStateException("Will not trade less than " + MINIMUM_PERCENTAGE_YIELD + " yield. Anything less will result in losses.");
         }
 
         JobStatus status = autoAppDao.getJobStatus(jobID);
@@ -156,11 +155,11 @@ public class JobStatusMutation implements GraphQLMutationResolver {
         }).collect(Collectors.toList());
     }
 
-    @ExceptionHandler(value = InvalidInputException.class)
+    @ExceptionHandler(value = IllegalStateException.class)
     public GraphQLError toCustomError(IllegalStateException e, ErrorContext errorContext) {
         Map<String, Object> extensions = Optional
                 .ofNullable(errorContext.getExtensions()).orElseGet(HashMap::new);
-        extensions.put("mutations", "invalid-input-exception");
+        extensions.put("my-custom-code", "some-custom-error");
         return GraphqlErrorBuilder.newError()
                 .message(e.getMessage())
                 .extensions(extensions)
